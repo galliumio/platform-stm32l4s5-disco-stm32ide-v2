@@ -64,17 +64,32 @@
 
 FW_DEFINE_THIS_FILE("Ili9341.cpp")
 
+// Uncomment the following macro to use an Adafruit TFT shield.
+// (Comment it to use an external LCD module)
+//#define USE_ADAFRUIT_TFT
+
 namespace APP {
 
 // Define SPI and interrupt configurations.
+#ifdef USE_ADAFRUIT_TFT
 Ili9341::Config const Ili9341::CONFIG[] = {
-    { ILI9341, 240, 320, SPI1, SPI1_IRQn, SPI1_PRIO,                            // SPI IRQ
-      GPIOA, GPIO_PIN_5, GPIOA, GPIO_PIN_6, GPIOA, GPIO_PIN_7, GPIO_AF5_SPI1,   // SPI pins (SCK, MISO, MOSI
-      GPIOA, GPIO_PIN_2, GPIOA, GPIO_PIN_15,                                    // CS and D/CX
-      DMA2_Channel4, DMA_REQUEST_SPI1_TX, DMA2_Channel4_IRQn, DMA2_CHANNEL4_PRIO,     // TX DMA
-      DMA2_Channel3, DMA_REQUEST_SPI1_RX, DMA2_Channel3_IRQn, DMA2_CHANNEL3_PRIO,     // RX DMA
+    { ILI9341, 240, 320, SPI1, SPI1_IRQn, SPI1_PRIO,                                // SPI IRQ
+      GPIOA, GPIO_PIN_5, GPIOA, GPIO_PIN_6, GPIOA, GPIO_PIN_7, GPIO_AF5_SPI1,       // SPI pins (SCK, MISO, MOSI)
+      GPIOA, GPIO_PIN_2, NULL, 0, GPIOA, GPIO_PIN_15, GPIOD, GPIO_PIN_14,           // CS0, CS1, D/CX and Reset
+      DMA2_Channel4, DMA_REQUEST_SPI1_TX, DMA2_Channel4_IRQn, DMA2_CHANNEL4_PRIO,   // TX DMA
+      DMA2_Channel3, DMA_REQUEST_SPI1_RX, DMA2_Channel3_IRQn, DMA2_CHANNEL3_PRIO,   // RX DMA
     },
 };
+#else
+Ili9341::Config const Ili9341::CONFIG[] = {
+    { ILI9341, 240, 320, SPI1, SPI1_IRQn, SPI1_PRIO,                                // SPI IRQ
+      GPIOA, GPIO_PIN_5, GPIOA, GPIO_PIN_6, GPIOA, GPIO_PIN_7, GPIO_AF5_SPI1,       // SPI pins (SCK, MISO, MOSI)
+      GPIOA, GPIO_PIN_2, GPIOB, GPIO_PIN_9, GPIOA, GPIO_PIN_3, GPIOD, GPIO_PIN_14,  // CS0, CS1, D/CX and Reset
+      DMA2_Channel4, DMA_REQUEST_SPI1_TX, DMA2_Channel4_IRQn, DMA2_CHANNEL4_PRIO,   // TX DMA
+      DMA2_Channel3, DMA_REQUEST_SPI1_RX, DMA2_Channel3_IRQn, DMA2_CHANNEL3_PRIO,   // RX DMA
+    },
+};
+#endif
 
 SPI_HandleTypeDef Ili9341::m_hal;   // Only support single instance.
 QXSemaphore Ili9341::m_spiSem;      // Only support single instance.
@@ -95,7 +110,7 @@ void Ili9341::InitSpi() {
     // SPI SCK pin config.
     GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull      = GPIO_PULLUP;
-    GPIO_InitStruct.Speed     = GPIO_SPEED_FAST;
+    GPIO_InitStruct.Speed     = GPIO_SPEED_LOW;
     GPIO_InitStruct.Alternate = m_config->spiAf;
     GPIO_InitStruct.Pin       = m_config->sckPin;
     HAL_GPIO_Init(m_config->sckPort, &GPIO_InitStruct);
@@ -108,11 +123,20 @@ void Ili9341::InitSpi() {
 
     // CS pin config (GPIO_InitStruct.Alternate don't care.)
     GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pin = m_config->csPin;
-    HAL_GPIO_Init(m_config->csPort, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = m_config->cs0Pin;
+    HAL_GPIO_Init(m_config->cs0Port, &GPIO_InitStruct);
+    //DeactivateCs(LCD_0);
+    if (m_config->cs1Port) {
+        GPIO_InitStruct.Pin = m_config->cs1Pin;
+        HAL_GPIO_Init(m_config->cs1Port, &GPIO_InitStruct);
+        //DeactivateCs(LCD_1);
+    }
     // D/CX config
     GPIO_InitStruct.Pin = m_config->dcPin;
     HAL_GPIO_Init(m_config->dcPort, &GPIO_InitStruct);
+    // Reset config
+    GPIO_InitStruct.Pin = m_config->resetPin;
+    HAL_GPIO_Init(m_config->resetPort, &GPIO_InitStruct);
 
     // Configurate DMA.
     m_txDmaHandle.Instance                 = m_config->txDmaCh;
@@ -158,8 +182,12 @@ void Ili9341::DeInitSpi() {
     HAL_GPIO_DeInit(m_config->sckPort, m_config->sckPin);
     HAL_GPIO_DeInit(m_config->misoPort, m_config->misoPin);
     HAL_GPIO_DeInit(m_config->mosiPort, m_config->mosiPin);
-    HAL_GPIO_DeInit(m_config->csPort, m_config->csPin);
+    HAL_GPIO_DeInit(m_config->cs0Port, m_config->cs0Pin);
+    if (m_config->cs1Port) {
+        HAL_GPIO_DeInit(m_config->cs1Port, m_config->cs1Pin);
+    }
     HAL_GPIO_DeInit(m_config->dcPort, m_config->dcPin);
+    HAL_GPIO_DeInit(m_config->resetPort, m_config->resetPin);
 
     HAL_DMA_DeInit(&m_txDmaHandle);
     HAL_DMA_DeInit(&m_rxDmaHandle);
@@ -171,7 +199,7 @@ void Ili9341::DeInitSpi() {
 
 bool Ili9341::InitHal() {
     m_hal.Instance               = m_config->spi;
-    m_hal.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+    m_hal.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
     m_hal.Init.Direction         = SPI_DIRECTION_2LINES;
     m_hal.Init.CLKPhase          = SPI_PHASE_1EDGE;
     m_hal.Init.CLKPolarity       = SPI_POLARITY_LOW;
@@ -190,28 +218,61 @@ void Ili9341::DeInitHal() {
     FW_ASSERT(status == HAL_OK);
 }
 
-bool Ili9341::SpiWriteDma(uint8_t const *buf, uint16_t len) {
-    bool status = false;
-    HAL_GPIO_WritePin(m_config->csPort, m_config->csPin, GPIO_PIN_RESET);
-    // Needs to cast away const-ness. It has been verified that HAL_SPI_Transmit_DMA does not write to buf.
-    if (HAL_SPI_Transmit_DMA(&m_hal, const_cast<uint8_t *>(buf), len) == HAL_OK) {
-        status = m_spiSem.wait(BSP_MSEC_TO_TICK(100000));
-        // @todo - There may be a bug in QXK that after a semaphore wait times out, the "waitSet" is not cleared but no task
-        //         is waiting on the semaphore. It triggers an assert at qxk_sema.cpp line 220 when the semaphore is signaled again
-        //         in HAL_SPI_TxCpltCallback() in stm32f4xx_it.cpp (before it is waited on again here.)
-        //
+void Ili9341::ActivateCs(LcdSel lcd) {
+    if (lcd & LCD_0) {
+        HAL_GPIO_WritePin(m_config->cs0Port, m_config->cs0Pin, GPIO_PIN_RESET);
     }
-    HAL_GPIO_WritePin(m_config->csPort, m_config->csPin, GPIO_PIN_SET);
+    // @todo Add check of CS1 enabled.
+    if (lcd & LCD_1) {
+        HAL_GPIO_WritePin(m_config->cs1Port, m_config->cs1Pin, GPIO_PIN_RESET);
+    }
+}
+
+void Ili9341::DeactivateCs(LcdSel lcd) {
+    if (lcd & LCD_0) {
+        HAL_GPIO_WritePin(m_config->cs0Port, m_config->cs0Pin, GPIO_PIN_SET);
+    }
+    // @todo Add check of CS1 enabled.
+    if (lcd & LCD_1) {
+        HAL_GPIO_WritePin(m_config->cs1Port, m_config->cs1Pin, GPIO_PIN_SET);
+    }
+}
+
+bool Ili9341::SpiWriteDma(uint8_t const *buf, uint32_t len, LcdSel lcd) {
+    bool status = false;
+    ActivateCs(lcd);
+
+    while (len){
+        //ActivateCs(lcd);
+
+        uint32_t writeLen = LESS(len, 0x8000);
+        // Needs to cast away const-ness. It has been verified that HAL_SPI_Transmit_DMA does not write to buf.
+        if (HAL_SPI_Transmit_DMA(&m_hal, const_cast<uint8_t *>(buf), writeLen) == HAL_OK) {
+            status = m_spiSem.wait(BSP_MSEC_TO_TICK(100000));
+            // @todo - There may be a bug in QXK that after a semaphore wait times out, the "waitSet" is not cleared but no task
+            //         is waiting on the semaphore. It triggers an assert at qxk_sema.cpp line 220 when the semaphore is signaled again
+            //         in HAL_SPI_TxCpltCallback() in stm32f4xx_it.cpp (before it is waited on again here.)
+            //
+        }
+        len -= writeLen;
+        buf += writeLen;
+        //DeactivateCs(lcd);
+
+        //m_container.DelayMs(20);
+    }
+    DeactivateCs(lcd);
     return status;
 }
 
-bool Ili9341::SpiReadDma(uint8_t *buf, uint16_t len) {
+bool Ili9341::SpiReadDma(uint8_t *buf, uint16_t len, LcdSel lcd) {
     bool status = false;
-    HAL_GPIO_WritePin(m_config->csPort, m_config->csPin, GPIO_PIN_RESET);
+    // Must not select both LCDs when reading or the MISO data will collide.
+    FW_ASSERT(lcd != LCD_BOTH);
+    ActivateCs(lcd);
     if (HAL_SPI_Receive_DMA(&m_hal, buf, len) == HAL_OK) {
         status = m_spiSem.wait(BSP_MSEC_TO_TICK(1000));
     }
-    HAL_GPIO_WritePin(m_config->csPort, m_config->csPin, GPIO_PIN_SET);
+    DeactivateCs(lcd);
     return status;
 }
 
@@ -221,7 +282,7 @@ void Ili9341::WriteCmd(uint8_t cmd) {
     FW_ASSERT(status);
 }
 
-void Ili9341::WriteDataBuf(uint8_t const *buf, uint16_t len) {
+void Ili9341::WriteDataBuf(uint8_t const *buf, uint32_t len) {
     HAL_GPIO_WritePin(m_config->dcPort, m_config->dcPin, GPIO_PIN_SET);
     bool status = SpiWriteDma(buf, len);
     FW_ASSERT(status);
@@ -251,6 +312,13 @@ void Ili9341::WriteData4(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
     buf[2] = b2;
     buf[3] = b3;
     WriteDataBuf(buf, sizeof(buf));
+}
+
+void Ili9341::ResetDisp() {
+    // Hardware reset
+    HAL_GPIO_WritePin(m_config->resetPort, m_config->resetPin, GPIO_PIN_RESET);
+    m_container.DelayMs(100);
+    HAL_GPIO_WritePin(m_config->resetPort, m_config->resetPin, GPIO_PIN_SET);
 }
 
 void Ili9341::InitDisp() {
@@ -400,7 +468,7 @@ void Ili9341::FillRect(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t co
   PushColor(color, w * h);
 }
 
-void Ili9341::WriteBitmap(int16_t x, int16_t y, uint16_t w, uint16_t h, uint8_t *buf, uint32_t len) {
+void Ili9341::WriteBitmap(int16_t x, int16_t y, uint16_t w, uint16_t h, uint8_t const *buf, uint32_t len) {
     FW_ASSERT(w*h*2 == len);
     if ((x >= m_width) || (y >= m_height)) {
         return;
@@ -426,9 +494,21 @@ void Ili9341::WriteBitmap(int16_t x, int16_t y, uint16_t w, uint16_t h, uint8_t 
     }
 
     SetAddrWindow(x, y, w, h);
+    /*
+    while (len){
+        uint32_t writeLen = LESS(len, sizeof(m_buffer));
+        for (uint32_t i = 0; i < writeLen; i+=2) {
+            m_buffer[i] = buf[i+1];
+            m_buffer[i+1] = buf[i];
+        }
+        WriteDataBuf(m_buffer, writeLen);
+        len -= writeLen;
+        buf += writeLen;
+        //m_container.DelayMs(5);
+    }
+    */
     WriteDataBuf(buf, len);
 }
-
 
 Ili9341::Ili9341(XThread &container) :
     Disp((QStateHandler)&Ili9341::InitialPseudoState, ILI9341, "ILI9341"),
@@ -503,6 +583,13 @@ QState Ili9341::Stopped(Ili9341 * const me, QEvt const * const e) {
             me->InitSpi();
             if (me->InitHal()) {
                 me->m_client = req.GetFrom();
+                // Note InitDisp() takes a few hundred ms. We want to do it before sending the DispStartCfm to ensure
+                // it is ready to be used when a user gets the cfm event.
+                me->ResetDisp();
+                me->InitDisp();
+                // @todo Get rotation from request. '3' means landscape.
+                me->SetRotation(3);
+                me->FillScreen(COLOR565_WHITE);
                 me->SendCfm(new DispStartCfm(ERROR_SUCCESS), req);
                 me->Raise(new Evt(START));
             } else {
@@ -523,25 +610,6 @@ QState Ili9341::Started(Ili9341 * const me, QEvt const * const e) {
     switch (e->sig) {
         case Q_ENTRY_SIG: {
             EVENT(e);
-            me->m_container.DelayMs(100);
-            me->InitDisp();
-            me->SetRotation(0);
-            me->FillScreen(COLOR565_WHITE);
-
-            // Test only.
-            /*
-            me->DrawChar(0, 0, 'A', COLOR565_RED, COLOR565_BLACK, 1);
-            me->DrawChar(0, 8, 'B', COLOR565_RED, COLOR565_BLACK, 5);
-            me->DrawChar(0, 48, 'C', COLOR565_RED, COLOR565_BLACK, 10);
-            char ch='0';
-            for (uint32_t i=0; i<500; i++) {
-                me->Write(ch++);
-                if (ch > 'z') {
-                    ch = '0';
-                }
-            }
-            */
-            //me->SetFont(&FreeSans24pt7b);
             return Q_HANDLED();
         }
         case Q_EXIT_SIG: {
@@ -617,6 +685,17 @@ QState Ili9341::Busy(Ili9341 * const me, QEvt const * const e) {
             EVENT(e);
             DispDrawRectReq const &req = static_cast<DispDrawRectReq const &>(*e);
             me->FillRect(req.GetX(), req.GetY(), req.GetW(), req.GetH(), Color565(req.GetColor()));
+            return Q_HANDLED();
+        }
+        case DISP_DRAW_BITMAP_REQ: {
+            EVENT(e);
+            DispDrawBitmapReq const &req = static_cast<DispDrawBitmapReq const &>(*e);
+            if (req.GetColorFormat() != DispDrawBitmapReq::COLOR_FORMAT_RGB_565) {
+                me->SendCfm(new DispDrawBitmapCfm(ERROR_PARAM, me->GetHsmn()), req);
+            } else {
+                me->WriteBitmap(req.GetArea(), req.GetBuf(), req.GetBufLen());
+                me->SendCfm(new DispDrawBitmapCfm(ERROR_SUCCESS), req);
+            }
             return Q_HANDLED();
         }
     }

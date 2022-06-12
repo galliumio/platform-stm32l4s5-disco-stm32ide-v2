@@ -48,6 +48,7 @@
 #include "DemoInterface.h"
 #include "GpioOutInterface.h"
 #include "AOWashingMachineInterface.h"
+#include "GuiMgrInterface.h"
 #include "TrafficInterface.h"
 #include "LevelMeterInterface.h"
 #include "NodeInterface.h"
@@ -60,7 +61,7 @@
 // Compile options to enable demo application.
 // Only one of the following can be enabled at a time.
 //#define ENABLE_TRAFFIC
-#define ENABLE_LEVEL_METER
+//#define ENABLE_LEVEL_METER
 
 #if (defined(ENABLE_TRAFFIC) && defined(ENABLE_LEVEL_METER))
 #error ENABLE_TRAFFIC and ENABLE_LEVEL_METER cannot be both defined
@@ -230,6 +231,7 @@ QState System::Starting1(System * const me, QEvt const * const e) {
     switch (e->sig) {
         case Q_ENTRY_SIG: {
             EVENT(e);
+			me->SendReq(new GuiMgrStartReq(), GUI_MGR, true);
             me->SendReq(new CompositeActStartReq(), COMPOSITE_ACT, true);
             me->SendReq(new SimpleActStartReq(), SIMPLE_ACT, false);
             me->SendReq(new DemoStartReq(), DEMO, false);
@@ -247,6 +249,7 @@ QState System::Starting1(System * const me, QEvt const * const e) {
             EVENT(e);
             return Q_HANDLED();
         }
+        case GUI_MGR_START_CFM:        
         case COMPOSITE_ACT_START_CFM:
         case SIMPLE_ACT_START_CFM:
         case DEMO_START_CFM:
@@ -408,6 +411,7 @@ QState System::Stopping2(System * const me, QEvt const * const e) {
     switch (e->sig) {
         case Q_ENTRY_SIG: {
             EVENT(e);
+            me->SendReq(new GuiMgrStopReq(), GUI_MGR, true);
             me->SendReq(new CompositeActStopReq(), COMPOSITE_ACT, true);
             me->SendReq(new SimpleActStopReq(), SIMPLE_ACT, false);
             me->SendReq(new DemoStopReq(), DEMO, false);
@@ -423,6 +427,7 @@ QState System::Stopping2(System * const me, QEvt const * const e) {
             EVENT(e);
             return Q_HANDLED();
         }
+        case GUI_MGR_STOP_CFM:
         case COMPOSITE_ACT_STOP_CFM:
         case SIMPLE_ACT_STOP_CFM:
         case DEMO_STOP_CFM:

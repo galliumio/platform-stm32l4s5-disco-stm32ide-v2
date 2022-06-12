@@ -65,6 +65,8 @@ namespace APP {
     ADD_HSM(DEMO, 1) \
     ADD_HSM(GPIO_OUT_ACT, 1) \
     ADD_HSM(GPIO_OUT, 1) \
+    ADD_HSM(LED_FRAME, 1) \
+    ADD_HSM(GUI_MGR, 1) \
     ADD_HSM(AO_WASHING_MACHINE, 1) \
     ADD_HSM(TRAFFIC, 1) \
     ADD_HSM(LAMP, 2) \
@@ -117,8 +119,9 @@ enum
     PRIO_UART1_ACT      = 29,
     PRIO_SYSTEM         = 26,
     PRIO_MOTOR          = 24,
-    PRIO_TRAIN          = 22,
-    PRIO_ILI9341        = 21,
+    PRIO_TRAIN          = 23,
+    PRIO_ILI9341        = 22,
+    PRIO_GUI_MGR        = 21,
     PRIO_WIFI           = 20,
     PRIO_NODE           = 18,
     PRIO_GPIO_IN_ACT    = 16,

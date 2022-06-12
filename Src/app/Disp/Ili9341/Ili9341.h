@@ -45,6 +45,7 @@
 #include "fw_evt.h"
 #include "app_hsmn.h"
 #include "gfxfont.h"
+#include "Graphics.h"
 #include "Disp.h"
 
 using namespace QP;
@@ -68,30 +69,41 @@ protected:
             static QState Idle(Ili9341 * const me, QEvt const * const e);
             static QState Busy(Ili9341 * const me, QEvt const * const e);
 
+    enum LcdSel {
+        LCD_0 = BIT_MASK_AT(0),
+        LCD_1 = BIT_MASK_AT(1),
+        LCD_BOTH = (LCD_0 | LCD_1)
+    };
+
     void InitSpi();
     void DeInitSpi();
     bool InitHal();
     void DeInitHal();
-    bool SpiWriteDma(uint8_t const *buf, uint16_t len);
-    bool SpiReadDma(uint8_t *buf, uint16_t len);
+    void ActivateCs(LcdSel lcd);
+    void DeactivateCs(LcdSel lcd);
+    bool SpiWriteDma(uint8_t const *buf, uint32_t len, LcdSel lcd = LCD_BOTH);
+    bool SpiReadDma(uint8_t *buf, uint16_t len, LcdSel lcd);
     void WriteCmd(uint8_t cmd);
-    void WriteDataBuf(uint8_t const *buf, uint16_t len);
+    void WriteDataBuf(uint8_t const *buf, uint32_t len);
     void WriteData1(uint8_t b0);
     void WriteData2(uint8_t b0, uint8_t b1);
     void WriteData3(uint8_t b0, uint8_t b1, uint8_t b2);
     void WriteData4(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3);
+    void ResetDisp();
     void InitDisp();
     void SetAddrWindow(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h);
     void PushColor(uint16_t color) { WriteData2(BYTE_1(color), BYTE_0(color)); }
     void PushColor(uint16_t color, uint32_t pixelCnt);
+    void WriteBitmap(Area const &a, uint8_t const *buf, uint32_t len) {
+        WriteBitmap(a.GetX(), a.GetY(), a.GetWidth(), a.GetHeight(), buf, len);
+    }
 
     uint16_t GetWidth() override { return m_width; }
     uint16_t GetHeight() override { return m_height; }
     void SetRotation(uint8_t rotation) override;
     void WritePixel(int16_t x, int16_t y, uint16_t color) override;
     void FillRect(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t color) override;
-    void WriteBitmap(int16_t x, int16_t y, uint16_t w, uint16_t h, uint8_t *buf, uint32_t len) override;
-
+    void WriteBitmap(int16_t x, int16_t y, uint16_t w, uint16_t h, uint8_t const *buf, uint32_t len) override;
 
     Hsmn m_client;
     Timer m_stateTimer;
@@ -117,13 +129,23 @@ protected:
         uint32_t mosiPin;
         uint32_t spiAf;
 
-        // SPI CS parameters.
-        GPIO_TypeDef *csPort;
-        uint32_t csPin;
+        // SPI CS parameters. Supports two LCDs connected in parallel.
+        // For display data (MOSI), both CSs are toggled simultaneously.
+        // For self-test (MISO), each CS becomes active individually.
+        // CS for first LCD.
+        GPIO_TypeDef *cs0Port;
+        uint32_t cs0Pin;
+        // CS for second LCD. Set to (NULL, 0) if unused.
+        GPIO_TypeDef *cs1Port;
+        uint32_t cs1Pin;
 
         // ILI9341 D/CX pin parameters (Data/Command)
         GPIO_TypeDef *dcPort;
         uint32_t dcPin;
+
+        // Reset pin parameters.
+        GPIO_TypeDef *resetPort;
+        uint32_t resetPin;
 
         // SPI Tx DMA parameters.
         DMA_Channel_TypeDef *txDmaCh;

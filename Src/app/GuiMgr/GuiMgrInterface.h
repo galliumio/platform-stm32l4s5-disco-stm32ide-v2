@@ -5,7 +5,7 @@
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * Alternatively, this program may be distributed and modified under the
  * terms of Gallium Studio LLC commercial licenses, which expressly supersede
  * the GNU General Public License and are specifically designed for licensees
@@ -29,78 +29,102 @@
  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  * Contact information:
  * Website - https://www.galliumstudio.com
  * Source repository - https://github.com/galliumstudio
  * Email - admin@galliumstudio.com
  ******************************************************************************/
 
-#ifndef GRAPHICS_H
-#define GRAPHICS_H
+#ifndef GUI_MGR_INTERFACE_H
+#define GUI_MGR_INTERFACE_H
 
-#include <stdint.h>
-#include "fw_assert.h"
+#include "fw_def.h"
+#include "fw_evt.h"
+#include "fw_msg.h"
+#include "app_hsmn.h"
+#include "DispMsgInterface.h"
 
-#define GRAPHICS_ASSERT(t_) ((t_) ? (void)0 : Q_onAssert("Graphics.h", (int)__LINE__))
+using namespace QP;
+using namespace FW;
 
 namespace APP {
 
-// x is horizontal and y is vertical, with origin at the top-left corner.
-class Point {
+#define GUI_MGR_INTERFACE_EVT \
+    ADD_EVT(GUI_MGR_START_REQ) \
+    ADD_EVT(GUI_MGR_START_CFM) \
+    ADD_EVT(GUI_MGR_STOP_REQ) \
+    ADD_EVT(GUI_MGR_STOP_CFM) \
+    ADD_EVT(GUI_MGR_TICKER_REQ) \
+    ADD_EVT(GUI_MGR_TICKER_CFM)
+
+#undef ADD_EVT
+#define ADD_EVT(e_) e_,
+
+enum {
+    GUI_MGR_INTERFACE_EVT_START = INTERFACE_EVT_START(GUI_MGR),
+    GUI_MGR_INTERFACE_EVT
+};
+
+enum {
+    GUI_MGR_REASON_UNSPEC = 0,
+};
+
+class GuiMgrStartReq : public Evt {
 public:
-    Point(uint32_t const x, uint32_t const y) : m_x(x), m_y(y) {}
-    uint32_t X() const { return m_x; }
-    uint32_t Y() const { return m_y; }
-    // use built-in memberwise constructor and assignment operator
-private:
-    uint32_t m_x;
-    uint32_t m_y;
+    enum {
+        TIMEOUT_MS = 500
+    };
+    GuiMgrStartReq() :
+        Evt(GUI_MGR_START_REQ) {}
+};
+
+class GuiMgrStartCfm : public ErrorEvt {
+public:
+    GuiMgrStartCfm(Error error, Hsmn origin = HSM_UNDEF, Reason reason = 0) :
+        ErrorEvt(GUI_MGR_START_CFM, error, origin, reason) {}
+};
+
+class GuiMgrStopReq : public Evt {
+public:
+    enum {
+        TIMEOUT_MS = 300
+    };
+    GuiMgrStopReq() :
+        Evt(GUI_MGR_STOP_REQ) {}
+};
+
+class GuiMgrStopCfm : public ErrorEvt {
+public:
+    GuiMgrStopCfm(Error error, Hsmn origin = HSM_UNDEF, Reason reason = 0) :
+        ErrorEvt(GUI_MGR_STOP_CFM, error, origin, reason) {}
+};
+
+class GuiMgrTickerReq : public MsgEvt {
+public:
+    enum {
+        TIMEOUT_MS = 300
+    };
+    // Must pass 'm_msg' as reference to member object and NOT the parameter 'msg'.
+    GuiMgrTickerReq(DispTickerReqMsg const &r) :
+        MsgEvt(GUI_MGR_TICKER_REQ, m_msg), m_msg(r) {}
+    char const *GetText() const { return m_msg.GetText(); }
+    uint32_t GetFgColor() const { return m_msg.GetFgColor(); }
+    uint32_t GetBgColor() const { return m_msg.GetBgColor(); }
+    uint16_t GetIndex() const { return m_msg.GetIndex(); }
+protected:
+    DispTickerReqMsg m_msg;
+};
+
+class GuiMgrTickerCfm : public ErrorMsgEvt {
+public:
+    GuiMgrTickerCfm(DispTickerCfmMsg const &r) :
+        ErrorMsgEvt(GUI_MGR_TICKER_CFM, m_msg), m_msg(r) {}
+protected:
+    DispTickerCfmMsg m_msg;
 };
 
 
-class Area {
-public:
-    // (x, y) is the starting point at the upper left corner.
-    Area(uint32_t x = 0, uint32_t y = 0, uint32_t width = 0, uint32_t height = 0) :
-        m_x(x), m_y(y), m_width(width), m_height(height) {}
-    uint32_t GetX() const { return m_x; }
-    uint32_t GetY() const { return m_y; }
-    uint32_t GetWidth() const { return m_width; }
-    uint32_t GetHeight() const { return m_height; }
-    void Clear() {
-        m_x = 0;
-        m_y = 0;
-        m_width = 0;
-        m_height = 0;
-    }
-    bool IsEmpty() const {
-        return (m_width == 0) || (m_height == 0);
-    }
-    Area &operator+=(Area const &a) {
-        if (!a.IsEmpty()) {
-            if (IsEmpty()) {
-                *this = a;
-            } else {
-                m_x = LESS(m_x, a.GetX());
-                m_y = LESS(m_y, a.GetY());
-                uint32_t end = m_x + m_width;
-                uint32_t aEnd = a.GetX() + a.GetWidth();
-                m_width = GREATER(end, aEnd) - m_x;
-                end = m_y + m_height;
-                aEnd = a.GetY() + a.GetHeight();
-                m_height = GREATER(end, aEnd) - m_y;
-            }
-        }
-        return *this;
-    }
-private:
-    uint32_t m_x;
-    uint32_t m_y;
-    uint32_t m_width;
-    uint32_t m_height;
-};
+} // namespace APP
 
-}
-
-#endif // GRAPHICS_H
+#endif // GUI_MGR_INTERFACE_H

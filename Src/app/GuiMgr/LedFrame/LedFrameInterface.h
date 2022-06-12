@@ -5,7 +5,7 @@
  * modify it under the terms of the GNU General Public License as published
  * by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * Alternatively, this program may be distributed and modified under the
  * terms of Gallium Studio LLC commercial licenses, which expressly supersede
  * the GNU General Public License and are specifically designed for licensees
@@ -29,78 +29,94 @@
  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
+ * 
  * Contact information:
  * Website - https://www.galliumstudio.com
  * Source repository - https://github.com/galliumstudio
  * Email - admin@galliumstudio.com
  ******************************************************************************/
 
-#ifndef GRAPHICS_H
-#define GRAPHICS_H
+#ifndef LED_FRAME_INTERFACE_H
+#define LED_FRAME_INTERFACE_H
 
-#include <stdint.h>
-#include "fw_assert.h"
+#include "fw_def.h"
+#include "fw_evt.h"
+#include "app_hsmn.h"
+#include "Graphics.h"
 
-#define GRAPHICS_ASSERT(t_) ((t_) ? (void)0 : Q_onAssert("Graphics.h", (int)__LINE__))
+using namespace QP;
+using namespace FW;
 
 namespace APP {
 
-// x is horizontal and y is vertical, with origin at the top-left corner.
-class Point {
-public:
-    Point(uint32_t const x, uint32_t const y) : m_x(x), m_y(y) {}
-    uint32_t X() const { return m_x; }
-    uint32_t Y() const { return m_y; }
-    // use built-in memberwise constructor and assignment operator
-private:
-    uint32_t m_x;
-    uint32_t m_y;
+#define LED_FRAME_INTERFACE_EVT \
+    ADD_EVT(LED_FRAME_START_REQ) \
+    ADD_EVT(LED_FRAME_START_CFM) \
+    ADD_EVT(LED_FRAME_STOP_REQ) \
+    ADD_EVT(LED_FRAME_STOP_CFM) \
+    ADD_EVT(LED_FRAME_UPDATE_REQ) \
+    ADD_EVT(LED_FRAME_UPDATE_CFM)
+
+#undef ADD_EVT
+#define ADD_EVT(e_) e_,
+
+enum {
+    LED_FRAME_INTERFACE_EVT_START = INTERFACE_EVT_START(LED_FRAME),
+    LED_FRAME_INTERFACE_EVT
 };
 
-
-class Area {
-public:
-    // (x, y) is the starting point at the upper left corner.
-    Area(uint32_t x = 0, uint32_t y = 0, uint32_t width = 0, uint32_t height = 0) :
-        m_x(x), m_y(y), m_width(width), m_height(height) {}
-    uint32_t GetX() const { return m_x; }
-    uint32_t GetY() const { return m_y; }
-    uint32_t GetWidth() const { return m_width; }
-    uint32_t GetHeight() const { return m_height; }
-    void Clear() {
-        m_x = 0;
-        m_y = 0;
-        m_width = 0;
-        m_height = 0;
-    }
-    bool IsEmpty() const {
-        return (m_width == 0) || (m_height == 0);
-    }
-    Area &operator+=(Area const &a) {
-        if (!a.IsEmpty()) {
-            if (IsEmpty()) {
-                *this = a;
-            } else {
-                m_x = LESS(m_x, a.GetX());
-                m_y = LESS(m_y, a.GetY());
-                uint32_t end = m_x + m_width;
-                uint32_t aEnd = a.GetX() + a.GetWidth();
-                m_width = GREATER(end, aEnd) - m_x;
-                end = m_y + m_height;
-                aEnd = a.GetY() + a.GetHeight();
-                m_height = GREATER(end, aEnd) - m_y;
-            }
-        }
-        return *this;
-    }
-private:
-    uint32_t m_x;
-    uint32_t m_y;
-    uint32_t m_width;
-    uint32_t m_height;
+enum {
+    LED_FRAME_REASON_UNSPEC = 0,
 };
 
-}
+class LedFrameStartReq : public Evt {
+public:
+    enum {
+        TIMEOUT_MS = 400
+    };
+    LedFrameStartReq() :
+        Evt(LED_FRAME_START_REQ) {}
+};
 
-#endif // GRAPHICS_H
+class LedFrameStartCfm : public ErrorEvt {
+public:
+    LedFrameStartCfm(Error error, Hsmn origin = HSM_UNDEF, Reason reason = 0) :
+        ErrorEvt(LED_FRAME_START_CFM, error, origin, reason) {}
+};
+
+class LedFrameStopReq : public Evt {
+public:
+    enum {
+        TIMEOUT_MS = 200
+    };
+    LedFrameStopReq() :
+        Evt(LED_FRAME_STOP_REQ) {}
+};
+
+class LedFrameStopCfm : public ErrorEvt {
+public:
+    LedFrameStopCfm(Error error, Hsmn origin = HSM_UNDEF, Reason reason = 0) :
+        ErrorEvt(LED_FRAME_STOP_CFM, error, origin, reason) {}
+};
+
+class LedFrameUpdateReq : public Evt {
+public:
+    enum {
+        TIMEOUT_MS = 200
+    };
+    LedFrameUpdateReq(Area const &area) :
+        Evt(LED_FRAME_UPDATE_REQ), m_area(area) {}
+    Area const &GetArea() const { return m_area; }
+private:
+    Area m_area;
+};
+
+class LedFrameUpdateCfm : public ErrorEvt {
+public:
+    LedFrameUpdateCfm(Error error, Hsmn origin = HSM_UNDEF, Reason reason = 0) :
+        ErrorEvt(LED_FRAME_UPDATE_CFM, error, origin, reason) {}
+};
+
+} // namespace APP
+
+#endif // LED_FRAME_INTERFACE_H

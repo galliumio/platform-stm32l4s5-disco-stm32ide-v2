@@ -115,7 +115,7 @@ protected:
     virtual void SetRotation(uint8_t rotation) { (void)rotation; };
     virtual void WritePixel(int16_t x, int16_t y, uint16_t color) { (void)x; (void)y; (void)color; };
     virtual void FillRect(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t color) { (void)x; (void)y; (void)w; (void)h; (void)color; };
-    virtual void WriteBitmap(int16_t x, int16_t y, uint16_t w, uint16_t h, uint8_t *buf, uint32_t len) { (void)x; (void)y; (void)w; (void)h; (void)buf; (void)len; };
+    virtual void WriteBitmap(int16_t x, int16_t y, uint16_t w, uint16_t h, uint8_t const *buf, uint32_t len) { (void)x; (void)y; (void)w; (void)h; (void)buf; (void)len; };
 
     // High-level graphical functions for use by state-machines of derived classes.
     void WriteFastVLine(int16_t x, int16_t y, int16_t len, uint16_t color) { FillRect(x, y, 1, len, color); }

@@ -36,71 +36,77 @@
  * Email - admin@galliumstudio.com
  ******************************************************************************/
 
-#ifndef GRAPHICS_H
-#define GRAPHICS_H
+#ifndef GUIBGWND_H
+#define GUIBGWND_H
 
-#include <stdint.h>
-#include "fw_assert.h"
+#include "fw_active.h"
+#include "Graphics.h"
+#include "WM.h"
+#include "LCDConf_Lin_Template.h"
+#include "GuiColor.h"
 
-#define GRAPHICS_ASSERT(t_) ((t_) ? (void)0 : Q_onAssert("Graphics.h", (int)__LINE__))
+#define GUIBGWND_ASSERT(t_) ((t_) ? (void)0 : Q_onAssert("GuiBgWnd.h", (int)__LINE__))
+
+using namespace QP;
+using namespace FW;
 
 namespace APP {
 
-// x is horizontal and y is vertical, with origin at the top-left corner.
-class Point {
-public:
-    Point(uint32_t const x, uint32_t const y) : m_x(x), m_y(y) {}
-    uint32_t X() const { return m_x; }
-    uint32_t Y() const { return m_y; }
-    // use built-in memberwise constructor and assignment operator
-private:
-    uint32_t m_x;
-    uint32_t m_y;
-};
+class GuiMgr;
 
+class GuiBgWnd {
+public:    
+    enum {
+        COLOR_IDX_RED     = 0,
+        COLOR_IDX_GREEN   = 512,
+        COLOR_IDX_BLUE    = 1024,        
+        COLOR_IDX_LIMIT   = 1536,
+        INVALID_COLOR_IDX = 0xFFFFFFFF,
+        MAX_COLOR_DELTA   = 100
+    };
 
-class Area {
-public:
-    // (x, y) is the starting point at the upper left corner.
-    Area(uint32_t x = 0, uint32_t y = 0, uint32_t width = 0, uint32_t height = 0) :
-        m_x(x), m_y(y), m_width(width), m_height(height) {}
-    uint32_t GetX() const { return m_x; }
-    uint32_t GetY() const { return m_y; }
-    uint32_t GetWidth() const { return m_width; }
-    uint32_t GetHeight() const { return m_height; }
-    void Clear() {
-        m_x = 0;
-        m_y = 0;
-        m_width = 0;
-        m_height = 0;
-    }
-    bool IsEmpty() const {
-        return (m_width == 0) || (m_height == 0);
-    }
-    Area &operator+=(Area const &a) {
-        if (!a.IsEmpty()) {
-            if (IsEmpty()) {
-                *this = a;
-            } else {
-                m_x = LESS(m_x, a.GetX());
-                m_y = LESS(m_y, a.GetY());
-                uint32_t end = m_x + m_width;
-                uint32_t aEnd = a.GetX() + a.GetWidth();
-                m_width = GREATER(end, aEnd) - m_x;
-                end = m_y + m_height;
-                aEnd = a.GetY() + a.GetHeight();
-                m_height = GREATER(end, aEnd) - m_y;
-            }
+    enum GradientDir {
+        GRADIENT_H,
+        GRADIENT_V   
+    };
+    
+    GuiBgWnd() : m_hsmn(HSM_UNDEF), m_hWin(0), m_color0Idx(INVALID_COLOR_IDX), m_color1Idx(INVALID_COLOR_IDX),
+        m_color0(GUI_CUSTOM_DARK_BLUE), m_color1(GUI_CUSTOM_DARK_BLUE), 
+        m_xPos(0), m_yPos(0), m_xSize(0), m_ySize(0), m_dir(GRADIENT_H) {}
+
+    WM_HWIN Create(Active *owner, int xPos, int yPos, int xSize, int ySize, WM_CALLBACK *cb);
+    WM_HWIN Destroy() {
+        WM_HWIN handle = m_hWin;
+        if (m_hWin) {
+            WM_DeleteWindow(m_hWin);
+            m_hWin = 0;
         }
-        return *this;
+        return handle;
     }
+    WM_HWIN GetHandle() const { return m_hWin; }
+    Area GetArea() const {
+        return Area(m_xPos, m_yPos, m_xSize, m_ySize);
+    }
+    void SetColorIdx(uint32_t colorIdx0, uint32_t colorIdx1, GradientDir dir = GRADIENT_H);
+    void SetColor(GUI_COLOR color0, GUI_COLOR color1, GradientDir dir = GRADIENT_H);
+    void Update(int dc);
+    void Paint();
+    static GUI_COLOR GetRgb(uint32_t colorIdx);  
+    
 private:
-    uint32_t m_x;
-    uint32_t m_y;
-    uint32_t m_width;
-    uint32_t m_height;
-};
-
+    void IncColorIdx(uint32_t &idx, int dc);
+    Hsmn        m_hsmn;         // Hsmn of owner.
+    WM_HWIN     m_hWin;
+    uint32_t    m_color0Idx;
+    uint32_t    m_color1Idx;
+    GUI_COLOR   m_color0;
+    GUI_COLOR   m_color1;
+    int         m_xPos;
+    int         m_yPos;
+    int         m_xSize;
+    int         m_ySize;
+    GradientDir m_dir;
+}; 
 }
-
-#endif // GRAPHICS_H
+#endif
+        

@@ -36,71 +36,39 @@
  * Email - admin@galliumstudio.com
  ******************************************************************************/
 
-#ifndef GRAPHICS_H
-#define GRAPHICS_H
-
-#include <stdint.h>
+#include <string.h>
+#include "fw_log.h"
 #include "fw_assert.h"
+#include "Console.h"
+#include "GuiMgrCmd.h"
+#include "GuiMgrInterface.h"
 
-#define GRAPHICS_ASSERT(t_) ((t_) ? (void)0 : Q_onAssert("Graphics.h", (int)__LINE__))
+FW_DEFINE_THIS_FILE("GuiMgrCmd.cpp")
 
 namespace APP {
 
-// x is horizontal and y is vertical, with origin at the top-left corner.
-class Point {
-public:
-    Point(uint32_t const x, uint32_t const y) : m_x(x), m_y(y) {}
-    uint32_t X() const { return m_x; }
-    uint32_t Y() const { return m_y; }
-    // use built-in memberwise constructor and assignment operator
-private:
-    uint32_t m_x;
-    uint32_t m_y;
-};
-
-
-class Area {
-public:
-    // (x, y) is the starting point at the upper left corner.
-    Area(uint32_t x = 0, uint32_t y = 0, uint32_t width = 0, uint32_t height = 0) :
-        m_x(x), m_y(y), m_width(width), m_height(height) {}
-    uint32_t GetX() const { return m_x; }
-    uint32_t GetY() const { return m_y; }
-    uint32_t GetWidth() const { return m_width; }
-    uint32_t GetHeight() const { return m_height; }
-    void Clear() {
-        m_x = 0;
-        m_y = 0;
-        m_width = 0;
-        m_height = 0;
-    }
-    bool IsEmpty() const {
-        return (m_width == 0) || (m_height == 0);
-    }
-    Area &operator+=(Area const &a) {
-        if (!a.IsEmpty()) {
-            if (IsEmpty()) {
-                *this = a;
-            } else {
-                m_x = LESS(m_x, a.GetX());
-                m_y = LESS(m_y, a.GetY());
-                uint32_t end = m_x + m_width;
-                uint32_t aEnd = a.GetX() + a.GetWidth();
-                m_width = GREATER(end, aEnd) - m_x;
-                end = m_y + m_height;
-                aEnd = a.GetY() + a.GetHeight();
-                m_height = GREATER(end, aEnd) - m_y;
-            }
+static CmdStatus Test(Console &console, Evt const *e) {
+    switch (e->sig) {
+        case Console::CONSOLE_CMD: {
+            console.PutStr("A composite active object. Add your own commands here.\n\r");
+            break;
         }
-        return *this;
     }
-private:
-    uint32_t m_x;
-    uint32_t m_y;
-    uint32_t m_width;
-    uint32_t m_height;
-};
-
+    return CMD_DONE;
 }
 
-#endif // GRAPHICS_H
+static CmdStatus List(Console &console, Evt const *e);
+static CmdHandler const cmdHandler[] = {
+    { "test",       Test,       "Test command", 0 },
+    { "?",          List,       "List commands", 0 }
+};
+
+static CmdStatus List(Console &console, Evt const *e) {
+    return console.ListCmd(e, cmdHandler, ARRAY_COUNT(cmdHandler));
+}
+
+CmdStatus GuiMgrCmd(Console &console, Evt const *e) {
+    return console.HandleCmd(e, cmdHandler, ARRAY_COUNT(cmdHandler));
+}
+
+}

@@ -59,9 +59,12 @@ TIM_HandleTypeDef Periph::m_tim3Hal;
 //          RX PB.7 DMA2 Channel 7 DMA_REQUEST_USART1_RX (This avoids conflict with I2C2)
 
 // (Adafruit Ili9341 SPI1 - SCK PA.5, MISO PA.6, MOSI PA.7, CS PA.2 D/CX PA.15
+//                  Reset - PD.14 (Not connected)
 //                  TX DMA2 Channel 4 DMA_REQUEST_SPI1_TX
 //                  RX DMA2 Channel 3 DMA_REQUEST_SPI1_RX)
 // External Ili9341 SPI1 - SCK PA.5, MISO PA.6, MOSI PA.7, CS PA.2 D/CX PA.3
+//                  Reset - PD.14
+// 2nd External Ili9341 - Shares all pins with first LCD except CS on PB.9
 //                  TX DMA2 Channel 4 DMA_REQUEST_SPI1_TX
 //                  RX DMA2 Channel 3 DMA_REQUEST_SPI1_RX)
 //
@@ -78,9 +81,16 @@ TIM_HandleTypeDef Periph::m_tim3Hal;
 // Sensor PRESS INT - PD.10
 // LED0 - PB.14 PWM TIM1 Channel 2
 // Button - PC.13
-// Motor IN1 (GPIO) - PA.4
-// Motor IN2 (GPIO) - PB.2
-// Motor EN (PWM) PB.1 TIM3 Channel 4
+// Motor (PWM on IN2)
+// Motor IN1 (GPIO) - PB.2
+// Motor IN2 (PWM) - PB.1
+// Motor EN (GPIO) - PA.4 TIM3 Channel 4
+#if 0
+// Motor (PWM on EN)
+// Motor IN1 (GPIO) - PB.2
+// Motor IN2 (PWM) - PA.4
+// Motor EN (GPIO) - PB.1 TIM3 Channel 4
+#endif
 // WS2812 (PWM) PA.15 TIM2 Channel 1
 //              DMA
 // ESP8266 (UART) TX PA.0
@@ -96,7 +106,7 @@ TIM_HandleTypeDef Periph::m_tim3Hal;
 // APB1CLK = HCLK -> TIM1CLK = HCLK = SystemCoreClock (See "clock tree" and "timer clock" in ref manual.)
 #define TIM3CLK             (SystemCoreClock)   // 120MHz
 #define TIM3_COUNTER_CLK    (20000000)          // 20MHz
-#define TIM3_PWM_FREQ       (15000) //(20000)             // 20kHz
+#define TIM3_PWM_FREQ       (1000) //(20000)             // 20kHz
 
 void Periph::SetupNormal() {
     __GPIOA_CLK_ENABLE();
@@ -104,6 +114,7 @@ void Periph::SetupNormal() {
     __GPIOC_CLK_ENABLE();
     __GPIOD_CLK_ENABLE();
     __GPIOE_CLK_ENABLE();
+    __HAL_RCC_CRC_CLK_ENABLE();     // Required by emwin.
     __HAL_RCC_DMA1_CLK_ENABLE();
     __HAL_RCC_DMA2_CLK_ENABLE();
     __HAL_RCC_TIM1_CLK_ENABLE();
@@ -149,6 +160,7 @@ void Periph::Reset() {
     __HAL_RCC_DMAMUX1_CLK_DISABLE();
     __HAL_RCC_TIM3_CLK_DISABLE();
     __HAL_RCC_TIM1_CLK_DISABLE();
+    __HAL_RCC_CRC_CLK_DISABLE();     // Required by emwin.
     __HAL_RCC_DMA2_CLK_DISABLE();
     __HAL_RCC_DMA1_CLK_DISABLE();
     __GPIOE_CLK_DISABLE();

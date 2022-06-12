@@ -36,71 +36,85 @@
  * Email - admin@galliumstudio.com
  ******************************************************************************/
 
-#ifndef GRAPHICS_H
-#define GRAPHICS_H
+#ifndef GUIBMP_H
+#define GUIBMP_H
 
-#include <stdint.h>
-#include "fw_assert.h"
+#include "fw_active.h"
+#include "Graphics.h"
+#include "WM.h"
+#include "LCDConf_Lin_Template.h"
 
-#define GRAPHICS_ASSERT(t_) ((t_) ? (void)0 : Q_onAssert("Graphics.h", (int)__LINE__))
+using namespace QP;
+using namespace FW;
+
+#define GUIBMP_ASSERT(t_) ((t_) ? (void)0 : Q_onAssert("GuiBmp.h", (int)__LINE__))
 
 namespace APP {
 
-// x is horizontal and y is vertical, with origin at the top-left corner.
-class Point {
-public:
-    Point(uint32_t const x, uint32_t const y) : m_x(x), m_y(y) {}
-    uint32_t X() const { return m_x; }
-    uint32_t Y() const { return m_y; }
-    // use built-in memberwise constructor and assignment operator
-private:
-    uint32_t m_x;
-    uint32_t m_y;
-};
+class GuiMgr;
 
-
-class Area {
-public:
-    // (x, y) is the starting point at the upper left corner.
-    Area(uint32_t x = 0, uint32_t y = 0, uint32_t width = 0, uint32_t height = 0) :
-        m_x(x), m_y(y), m_width(width), m_height(height) {}
-    uint32_t GetX() const { return m_x; }
-    uint32_t GetY() const { return m_y; }
-    uint32_t GetWidth() const { return m_width; }
-    uint32_t GetHeight() const { return m_height; }
-    void Clear() {
-        m_x = 0;
-        m_y = 0;
-        m_width = 0;
-        m_height = 0;
+class GuiBmp
+{
+public:   
+    enum {
+        IMG_CNT  = 100
+    };    
+    GuiBmp() : m_hsmn(HSM_UNDEF), m_hWin(0), m_hParent(0), m_imgCnt(0), m_imgIdx(0),
+        m_xPos(0), m_yPos(0), m_xSize(0), m_ySize(0), m_vxPos(0), m_vyPos(0) {
+        memset(m_bitmap, 0, sizeof(m_bitmap));
     }
-    bool IsEmpty() const {
-        return (m_width == 0) || (m_height == 0);
-    }
-    Area &operator+=(Area const &a) {
-        if (!a.IsEmpty()) {
-            if (IsEmpty()) {
-                *this = a;
-            } else {
-                m_x = LESS(m_x, a.GetX());
-                m_y = LESS(m_y, a.GetY());
-                uint32_t end = m_x + m_width;
-                uint32_t aEnd = a.GetX() + a.GetWidth();
-                m_width = GREATER(end, aEnd) - m_x;
-                end = m_y + m_height;
-                aEnd = a.GetY() + a.GetHeight();
-                m_height = GREATER(end, aEnd) - m_y;
-            }
+    WM_HWIN Create(Active *owner, WM_HWIN hParent, int xPos, int yPos, int xSize, int ySize, WM_CALLBACK *cb);
+    WM_HWIN Destroy() {
+        WM_HWIN handle = m_hWin;
+        if (m_hWin) {
+            WM_DeleteWindow(m_hWin);
+            m_hWin = 0;
         }
-        return *this;
+        return handle;
     }
+    Area GetArea() const {
+        return Area(m_xPos, m_yPos, m_xSize, m_ySize);
+    }
+    void Hide() {
+        WM_HideWindow(m_hWin);        
+    }
+    void Show() {
+        WM_ShowWindow(m_hWin);        
+    }
+    void SetBitmap(uint32_t imgIdx, GUI_BITMAP const *bitmap);
+    // dx is amount to shift right (+ve for right, -ve for left)
+    void Update(int dx, uint32_t& imgIdx, uint32_t& offsetLeft, uint32_t& offsetRight);
+    void Paint();
+
 private:
-    uint32_t m_x;
-    uint32_t m_y;
-    uint32_t m_width;
-    uint32_t m_height;
+    uint32_t GetNextImgIdx() {
+        if ((m_imgIdx + 1) >= m_imgCnt) return 0;
+        return (m_imgIdx + 1);
+    }
+    int GetImgXSize(uint32_t imgIdx) {
+        GUIBMP_ASSERT(imgIdx < m_imgCnt);
+        return (int)(m_bitmap[imgIdx]->XSize);
+    }
+    int GetImgYSize(uint32_t imgIdx) {
+        GUIBMP_ASSERT(imgIdx < m_imgCnt);
+        return (int)(m_bitmap[imgIdx]->YSize);
+    }
+    
+    Hsmn              m_hsmn;         // Hsmn of owner.
+    WM_HWIN           m_hWin;
+    WM_HWIN           m_hParent;
+    uint32_t          m_imgCnt;
+    uint32_t          m_imgIdx;
+    GUI_BITMAP const *m_bitmap[IMG_CNT];
+    int               m_xPos;
+    int               m_yPos;
+    int               m_xSize;
+    int               m_ySize;
+    int               m_vxPos;
+    int               m_vyPos;
 };
 
 }
 
-#endif // GRAPHICS_H
+#endif
+        

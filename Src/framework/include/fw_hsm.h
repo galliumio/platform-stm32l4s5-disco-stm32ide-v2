@@ -168,7 +168,7 @@ public:
 protected:
     enum {
         DEFER_QUEUE_COUNT = 16,
-        REMINDER_QUEUE_COUNT = 4
+        REMINDER_QUEUE_COUNT = 64 // was 4, increased for WmEvent raised in WmHandler.
     };
 
     // Called by Active::dispatch() and Region::dispatch().

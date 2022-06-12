@@ -98,6 +98,7 @@
 #include "Motor.h"
 #include "Train.h"
 #include "UartAct.h"
+#include "GuiMgr.h"
 #include "SystemInterface.h"
 #include "ConsoleInterface.h"
 #include "ConsoleCmd.h"
@@ -131,6 +132,7 @@ static GpioInAct gpioInAct;
 static UartAct uartAct1(UART1_ACT, "UART1_ACT", "UART1_IN", "UART1_OUT");
 static Ili9341Thread ili9341Thread;
 static SensorThread sensorThread;
+static GuiMgr guiMgr;
 static WifiThread wifiThread;
 static Node node;
 static Motor motor;
@@ -161,7 +163,9 @@ int main(void)
     Log::Off(CMD_INPUT_UART1);
     Log::Off(CMD_PARSER_UART1);
     Log::Off(CONSOLE_UART1);
-    Log::Off(ILI9341);
+    //Log::Off(ILI9341);
+    //Log::Off(LED_FRAME);
+    //Log::Off(GUI_MGR);
     Log::Off(SENSOR_ACCEL_GYRO);
     Log::Off(SENSOR_HUMID_TEMP);
     Log::Off(ACCEL_GYRO_INT);
@@ -182,6 +186,7 @@ int main(void)
     consoleUart1.Start(PRIO_CONSOLE_UART1);
     ili9341Thread.Start(PRIO_ILI9341);
     sensorThread.Start(PRIO_SENSOR);
+    guiMgr.Start(PRIO_GUI_MGR);
     wifiThread.Start(PRIO_WIFI);
     node.Start(PRIO_NODE);
     motor.Start(PRIO_MOTOR);

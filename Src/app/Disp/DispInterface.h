@@ -43,6 +43,7 @@
 #include "fw_evt.h"
 #include "app_hsmn.h"
 #include "fw_assert.h"
+#include "Graphics.h"
 
 #define DISP_INTERFACE_ASSERT(t_) ((t_) ? (void)0 : Q_onAssert("DispInterface.h", (int_t)__LINE__))
 
@@ -61,7 +62,9 @@ namespace APP {
     ADD_EVT(DISP_DRAW_END_REQ) \
     ADD_EVT(DISP_DRAW_END_CFM) \
     ADD_EVT(DISP_DRAW_TEXT_REQ) \
-    ADD_EVT(DISP_DRAW_RECT_REQ)
+    ADD_EVT(DISP_DRAW_RECT_REQ) \
+    ADD_EVT(DISP_DRAW_BITMAP_REQ) \
+    ADD_EVT(DISP_DRAW_BITMAP_CFM)
 
 #undef ADD_EVT
 #define ADD_EVT(e_) e_,
@@ -88,7 +91,7 @@ enum {
 class DispStartReq : public Evt {
 public:
     enum {
-        TIMEOUT_MS = 100
+        TIMEOUT_MS = 300
     };
     DispStartReq() :
         Evt(DISP_START_REQ) {}
@@ -202,6 +205,37 @@ private:
     uint16_t m_w;
     uint16_t m_h;
     uint32_t m_color;         // 24-bit RGB
+};
+
+class DispDrawBitmapReq : public Evt {
+public:
+    enum {
+        TIMEOUT_MS = 100
+    };
+    enum ColorFormat {
+        COLOR_FORMAT_RGB_565,   // 16-bit little-endian.
+        COLOR_FORMAT_COUNT
+    };
+    DispDrawBitmapReq(Area const &area, uint8_t const *buf, uint32_t bufLen, ColorFormat colorFormat = COLOR_FORMAT_RGB_565) :
+        Evt(DISP_DRAW_BITMAP_REQ), m_area(area), m_buf(buf), m_bufLen(bufLen), m_colorFormat(colorFormat) {
+        DISP_INTERFACE_ASSERT(m_buf && m_bufLen);
+        DISP_INTERFACE_ASSERT(m_colorFormat < COLOR_FORMAT_COUNT);
+    }
+    Area const &GetArea() const { return m_area; }
+    uint8_t const *GetBuf() const { return m_buf; }
+    uint32_t GetBufLen() const { return m_bufLen; }
+    ColorFormat GetColorFormat() const { return m_colorFormat; }
+private:
+    Area m_area;
+    uint8_t const *m_buf;
+    uint32_t m_bufLen;
+    ColorFormat m_colorFormat;
+};
+
+class DispDrawBitmapCfm : public ErrorEvt {
+public:
+    DispDrawBitmapCfm(Error error, Hsmn origin = HSM_UNDEF, Reason reason = 0) :
+        ErrorEvt(DISP_DRAW_BITMAP_CFM, error, origin, reason) {}
 };
 
 } // namespace APP
