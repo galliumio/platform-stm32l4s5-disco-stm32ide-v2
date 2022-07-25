@@ -36,8 +36,8 @@
  * Email - admin@galliumstudio.com
  ******************************************************************************/
 
-#ifndef DISP_MSG_INTERFACE_H
-#define DISP_MSG_INTERFACE_H
+#ifndef HEADLIGHT_MSG_INTERFACE_H
+#define HEADLIGHT_MSG_INTERFACE_H
 
 #include "fw_def.h"
 #include "fw_msg.h"
@@ -46,39 +46,70 @@
 using namespace QP;
 using namespace FW;
 
+#define MSG_HEADLIGHT_REASON_INVALID_PATTERN    "Invalid headlight pattern"
+
 namespace APP {
 
-// This file defines messages for the "Disp (Display)" role.
+// This file defines messages for the "Headlight" role.
 
-class DispTickerReqMsg final: public Msg {
+class HeadlightSetReqMsg final: public Msg {
 public:
-    // Color format is (888 xBGR).
-    DispTickerReqMsg(char const *text = MSG_UNDEF, uint32_t fgColor = 0, uint32_t bgColor = 0, uint16_t index = 0) :
-        Msg("DispTickerReqMsg"), m_fgColor(fgColor), m_bgColor(bgColor), m_index(index) {
+    HeadlightSetReqMsg(uint32_t color = 0, uint32_t rampMs = 1) :
+        Msg("HeadlightSetReqMsg"), m_color(color), m_rampMs(rampMs) {
         m_len = sizeof(*this);
-        STRBUF_COPY(m_text, text);
     }
-    char const *GetText() const { return m_text; }
-    uint32_t GetFgColor() const { return m_fgColor; }
-    uint32_t GetBgColor() const { return m_bgColor; }
-    uint16_t GetIndex() const { return m_index; }
-
-protected:
-    char m_text[200];
-    uint32_t m_fgColor;   // Foreground color (888 xBGR)
-    uint32_t m_bgColor;   // Background color (888 xBGR)
-    uint16_t m_index;
+    uint32_t GetColor() const { return m_color; }
+    uint32_t GetRampMs() const { return m_rampMs; }
+private:
+    uint32_t m_color;       // Set color (888 xBGR).
+    uint32_t m_rampMs;      // Ramp time from current color to set color in ms.
 } __attribute__((packed));
 
-class DispTickerCfmMsg final : public ErrorMsg {
+class HeadlightSetCfmMsg final : public ErrorMsg {
 public:
-    DispTickerCfmMsg(char const *error = MSG_ERROR_SUCCESS, char const *origin = MSG_UNDEF, char const *reason = MSG_REASON_UNSPEC) :
-        ErrorMsg("DispTickerCfmMsg", error, origin, reason) {
+    HeadlightSetCfmMsg(char const *error = MSG_ERROR_SUCCESS, char const *origin = MSG_UNDEF, char const *reason = MSG_REASON_UNSPEC) :
+        ErrorMsg("HeadlightSetCfmMsg", error, origin, reason) {
         m_len = sizeof(*this);
     }
 } __attribute__((packed));
 
+class HeadlightPatternReqMsg final: public Msg {
+public:
+    HeadlightPatternReqMsg(uint32_t patternIndex = 0, bool isRepeat = false) :
+        Msg("HeadlightPatternReqMsg"), m_patternIndex(patternIndex), m_isRepeat(isRepeat) {
+        m_len = sizeof(*this);
+    }
+    uint32_t GetPatternIndex() const { return m_patternIndex; }
+    bool IsRepeat() const { return m_isRepeat; }
+private:
+    uint32_t m_patternIndex;
+    bool m_isRepeat;
+} __attribute__((packed));
+
+class HeadlightPatternCfmMsg final : public ErrorMsg {
+public:
+    HeadlightPatternCfmMsg(char const *error = MSG_ERROR_SUCCESS, char const *origin = MSG_UNDEF, char const *reason = MSG_REASON_UNSPEC) :
+        ErrorMsg("HeadlightPatternCfmMsg", error, origin, reason) {
+        m_len = sizeof(*this);
+    }
+} __attribute__((packed));
+
+class HeadlightOffReqMsg final: public Msg {
+public:
+    HeadlightOffReqMsg() :
+        Msg("HeadlightOffReqMsg") {
+        m_len = sizeof(*this);
+    }
+} __attribute__((packed));
+
+class HeadlightOffCfmMsg final : public ErrorMsg {
+public:
+    HeadlightOffCfmMsg(char const *error = MSG_ERROR_SUCCESS, char const *origin = MSG_UNDEF, char const *reason = MSG_REASON_UNSPEC) :
+        ErrorMsg("HeadlightOffCfmMsg", error, origin, reason) {
+        m_len = sizeof(*this);
+    }
+} __attribute__((packed));
 
 } // namespace APP
 
-#endif // DISP_MSG_INTERFACE_H
+#endif // HEADLIGHT_MSG_INTERFACE_H

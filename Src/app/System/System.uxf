@@ -380,9 +380,10 @@ style=wordwrap</panel_attributes>
     </coordinates>
     <panel_attributes>Starting3
 --
-entry/ LEVEL_METER_START_REQ // Compiler option
+entry/ SendReq(LEVEL_METER_START_REQ_), // Compiler option
+       SendReq(TRAIN_START_REQ)
        
-LEVEL_METER_START_CFM
+LEVEL_METER_START_CFM, TRAIN_START_CFM
 / if (!CheckCfm()) Raise(FAILED(error))
   else if (allReceived) Raise(DONE)
     
@@ -450,9 +451,10 @@ valign=top
     </coordinates>
     <panel_attributes>Stopping1
 --
-entry/ SendReq(LEVEL_METER_STOP_REQ)
+entry/ SendReq(LEVEL_METER_STOP_REQ),
+       SendReq(TRAIN_STOP_REQ)
 
-LEVEL_METER_STOP_CFM
+LEVEL_METER_STOP_CFM, TRAIN_STOP_REQ
 / if (!CheckCfm()) Raise(FAILED(error))
   else if (allReceived) Raise(NEXT)
     

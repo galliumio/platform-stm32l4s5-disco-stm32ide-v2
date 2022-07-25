@@ -66,13 +66,16 @@ static CmdStatus Start(Console &console, Evt const *e) {
         case MOTOR_START_CFM: {
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
             console.PrintErrorEvt(cfm);
-            bool allReceived = false;
-            if (!console.CheckCfm(cfm, allReceived, console.GetEvtSeq()) || allReceived) {
-                console.Print("Done with %s\n\r", allReceived ? "success" : "error");
+            bool allReceived;
+            if (!console.CheckCfm(cfm, allReceived, console.GetEvtSeq())) {
+                console.Print("Done with error\n\r");
+                return CMD_DONE;
+            } else if (allReceived) {
+                console.Print("Done with success\n\r");
                 return CMD_DONE;
             }
             console.Print("Continue to wait for matching cfm...\n\r");
-            return CMD_CONTINUE;
+            break;
         }
     }
     return CMD_CONTINUE;
@@ -87,13 +90,16 @@ static CmdStatus Stop(Console &console, Evt const *e) {
         case MOTOR_STOP_CFM: {
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
             console.PrintErrorEvt(cfm);
-            bool allReceived = false;
-            if (!console.CheckCfm(cfm, allReceived, console.GetEvtSeq()) || allReceived) {
-                console.Print("Done with %s\n\r", allReceived ? "success" : "error");
+            bool allReceived;
+            if (!console.CheckCfm(cfm, allReceived, console.GetEvtSeq())) {
+                console.Print("Done with error\n\r");
+                return CMD_DONE;
+            } else if (allReceived) {
+                console.Print("Done with success\n\r");
                 return CMD_DONE;
             }
             console.Print("Continue to wait for matching cfm...\n\r");
-            return CMD_CONTINUE;
+            break;
         }
     }
     return CMD_CONTINUE;
@@ -117,7 +123,7 @@ static CmdStatus Run(Console &console, Evt const *e) {
                 }
                 console.Print("level(%c) = %d, accel = %d, decel = %d\n\r",
                               (dir == MotorDir::FORWARD) ? 'f' : 'b', level, accel, decel);
-                console.SendReqMsg(new MotorRunReq(MotorRunReqMsg(dir, level, accel, decel)), MOTOR, MSG_UNDEF, true, console.GetMsgSeq());
+                console.SendReqMsg(new MotorRunReq(dir, level, accel, decel), MOTOR, MSG_UNDEF, true, console.GetMsgSeq());
                 break;
             }
             console.Print("motor f|b <level (0-1000)> <accel level/s> <decel level/s> <\n\r");
@@ -128,11 +134,14 @@ static CmdStatus Run(Console &console, Evt const *e) {
             auto const &cfm = static_cast<MotorRunCfm const &>(*e);
             console.PrintErrorMsg(cfm);
             bool allReceived;
-            if (!console.CheckCfmMsg(cfm, allReceived, console.GetMsgSeq()) || allReceived) {
-                console.Print("Done with %s\n\r", allReceived ? "success" : "error");
+            if (!console.CheckCfmMsg(cfm, allReceived, console.GetMsgSeq())) {
+                console.Print("Done with error\n\r");
+                return CMD_DONE;
+            } else if (allReceived) {
+                console.Print("Done with success\n\r");
                 return CMD_DONE;
             }
-            return CMD_CONTINUE;
+            break;
         }
     }
     return CMD_CONTINUE;

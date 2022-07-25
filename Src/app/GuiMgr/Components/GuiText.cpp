@@ -132,7 +132,7 @@ void GuiText::Update(int dy, uint32_t& bufIdx, uint32_t& offsetLeft, uint32_t& o
     WM_Invalidate(m_hWin);        
 }
 
-void GuiText::Paint()
+Area GuiText::Paint()
 {
     FW_ASSERT(m_hWin);
     WM_SelectWindow(m_hWin);
@@ -147,7 +147,7 @@ void GuiText::Paint()
     rect.y0 = m_vyPos + TOP_PADDING;
     rect.x1 = rect.x0 + (m_xSize - 4) - 1;
     rect.y1 = rect.y0 + (m_ySizeText[m_bufIdx] - TOP_PADDING) - 1;
-    GUI_DispStringInRectWrap(m_textBuf[m_bufIdx], &rect, GUI_TA_TOP|GUI_TA_LEFT, GUI_WRAPMODE_WORD);
+    GUI_DispStringInRectWrap(m_textBuf[m_bufIdx], &rect, /*GUI_TA_TOP | GUI_TA_LEFT*/ GUI_TA_VCENTER | GUI_TA_HCENTER, GUI_WRAPMODE_WORD);
     uint32_t nextIdx = GetNextBufIdx();
     FW_ASSERT(nextIdx < m_bufCnt);
     GUI_SetFont(m_pFont[nextIdx]);
@@ -158,8 +158,9 @@ void GuiText::Paint()
     rect.y0 = m_vyPos + m_ySizeText[m_bufIdx] + TOP_PADDING;
     rect.x1 = rect.x0 + (m_xSize - 4) - 1;
     rect.y1 = rect.y0 + (m_ySizeText[nextIdx] - TOP_PADDING) - 1;
-    GUI_DispStringInRectWrap(m_textBuf[nextIdx], &rect, GUI_TA_TOP|GUI_TA_LEFT, GUI_WRAPMODE_WORD);
+    GUI_DispStringInRectWrap(m_textBuf[nextIdx], &rect, /*GUI_TA_TOP | GUI_TA_LEFT*/ GUI_TA_VCENTER | GUI_TA_HCENTER, GUI_WRAPMODE_WORD);
     GUI_SetColor(m_borColor);   
-    GUI_DrawRoundedFrame(0, 0, m_xSize - 1, m_ySize - 1, 0, 1);  
+    GUI_DrawRoundedFrame(0, 0, m_xSize - 1, m_ySize - 1, 0, 1);
+    return GetArea();
 }
 }

@@ -77,7 +77,7 @@ protected:
     Timer m_activeTimer;
 
     enum {
-        ACTIVE_TIMEOUT_MS = 1000,
+        ACTIVE_TIMEOUT_MS = 2000,       // This is sufficient for 16KB buffer at 115200 baud (1.4s).
     };
 
 #define UART_OUT_TIMER_EVT \

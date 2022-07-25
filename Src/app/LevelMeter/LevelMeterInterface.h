@@ -140,6 +140,9 @@ public:
         MsgEvt(LEVEL_METER_DATA_IND, m_msg), m_msg(r) {
         LEVEL_METER_INTERFACE_ASSERT(&GetMsgBase() == &m_msg);
     }
+    // Uses delegating constructor.
+    LevelMeterDataInd(float pitch, float roll) :
+        LevelMeterDataInd(SensorDataIndMsg(pitch, roll)) {}
     uint32_t GetPitch() const { return m_msg.GetPitch(); }
     uint32_t GetRoll() const { return m_msg.GetRoll(); }
 protected:

@@ -28,8 +28,7 @@ _start (void);
 // to allow setting breakpoints at Reset_Handler.
 void __attribute__ ((section(".after_vectors"),noreturn))
 Reset_Handler (void)
-{
-  _start ();
+ {  _start ();
 }
 
 #else

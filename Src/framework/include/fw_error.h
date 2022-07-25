@@ -45,6 +45,7 @@ namespace FW {
 enum Error {
     ERROR_SUCCESS,      // No error, success.
     ERROR_UNSPEC,       // Unspecified error.
+    ERROR_MSG,          // An error originated from an error message (ErrorMsg).
     ERROR_ABORTED,      // Aborted before completion.
     ERROR_TIMEOUT,      // Timeout.
     ERROR_HAL,          // HAL driver error.
@@ -54,7 +55,7 @@ enum Error {
     ERROR_UNAVAIL,      // Resource unavailable, busy.
     ERROR_PARAM,        // Invalid parameter, out of range.
     ERROR_NETWORK,      // Network related errors.
-    ERROR_AUTH,         // Authentication error.
+    ERROR_AUTH          // Authentication error.
 };
 
 // HSM specific reason code to explain why an error code has occurred.

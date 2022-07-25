@@ -45,6 +45,7 @@
 #include "fw_evt.h"
 #include "fw_kv.h"
 #include "fw_map.h"
+#include "fw_pipe.h"
 #include "app_hsmn.h"
 #include "Graphics.h"
 #include "LedFrame.h"
@@ -59,6 +60,8 @@ using namespace FW;
 
 namespace APP {
 
+using AreaList = Pipe<Area>;
+
 class GuiMgr : public Active {
 public:
     GuiMgr();
@@ -70,6 +73,7 @@ protected:
         static QState Starting(GuiMgr * const me, QEvt const * const e);
         static QState Stopping(GuiMgr * const me, QEvt const * const e);
         static QState Started(GuiMgr * const me, QEvt const * const e);
+            static QState TrainSign(GuiMgr *me, QEvt const *e);
             static QState ColorTest(GuiMgr *me, QEvt const *e);
             static QState Signage(GuiMgr *me, QEvt const *e);
             static QState Ticker(GuiMgr *me, QEvt const *e);
@@ -100,6 +104,12 @@ protected:
     static uint32_t GetTimeout(TimeoutMap const *map, uint32_t mapLen, uint32_t offsetLeft, uint32_t offsetRight);
     static uint32_t GetTimeout(TimeoutMap const *map, uint32_t mapLen, uint32_t offset);
 
+    // Helper function to manage dirty areas.
+    void SetDirty(Area const &area);
+    bool IsDirty() { return m_dirtyAreaList.GetUsedCount() > 0; }
+    bool GetDirty(Area &area) { return m_dirtyAreaList.Read(&area, 1) > 0; }
+
+
     // Window Manager callback function.
     static void WmCallback(WM_MESSAGE *msg);
     void WmHandler(WM_MESSAGE *msg);
@@ -112,14 +122,19 @@ protected:
     HwinSigMap m_hwinSigMap;
 
     LedFrame m_ledFrame;
-    bool m_dirty;
-    Area m_dirtyArea;
+
+    enum {
+        DIRTY_AREA_ORDER = 3
+    };
+    Area m_dirtyAreaStor[1 << DIRTY_AREA_ORDER];
+    AreaList m_dirtyAreaList;
 
     GuiBgWnd  m_bgWnd;
     GuiTicker m_ticker1;
     GuiTicker m_ticker2;
     GuiTicker m_ticker3;
     GuiTicker m_ticker4;
+    GuiTicker m_ticker5;
     GuiText   m_text1;
     GuiBmp    m_bmp;
 
@@ -129,7 +144,7 @@ protected:
     Evt m_inEvt;                    // Static event copy of a generic incoming req to be confirmed. Added more if needed.
 
     enum {
-        SYNC_TIMEOUT_MS = 100,
+        SYNC_TIMEOUT_MS = 50,       // 100
         BG_WND_TIMEOUT_MS = 40,
         COLOR_TEST_TIMEOUT_MS = 1000, // 5000,
     };
@@ -168,6 +183,7 @@ protected:
     ADD_EVT(PAINT_TICKER2) \
     ADD_EVT(PAINT_TICKER3) \
     ADD_EVT(PAINT_TICKER4) \
+    ADD_EVT(PAINT_TICKER5) \
     ADD_EVT(PAINT_TEXT1) \
     ADD_EVT(PAINT_BMP)
 

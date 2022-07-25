@@ -78,7 +78,7 @@ enum {
     DISP_REASON_UNSPEC = 0,
 };
 
-// Color definitions
+// Color definitions (888 xRGB)
 #define COLOR24_BLACK        0x000000      ///<   0,   0,   0
 #define COLOR24_WHITE        0xFFFFFF      ///< 255, 255, 255
 #define COLOR24_GRAY         0x808080
@@ -93,8 +93,12 @@ public:
     enum {
         TIMEOUT_MS = 300
     };
-    DispStartReq() :
-        Evt(DISP_START_REQ) {}
+    DispStartReq(uint8_t rotation = 0) :
+        Evt(DISP_START_REQ), m_rotation(rotation) {}
+    uint8_t GetRotation() const { return m_rotation; }
+private:
+    uint8_t m_rotation;        // Rotation mode (0 to 3). @todo Define each mode.
+                                // Currently 0 for portrait and 3 for landscape.
 };
 
 class DispStartCfm : public ErrorEvt {
@@ -155,6 +159,7 @@ public:
         TIMEOUT_MS = 100,
         MAX_TEXT_LEN = 32
     };
+    // Color format is (888 xRGB).
     DispDrawTextReq(char const *text, int16_t x, int16_t y,
                     uint32_t textColor = COLOR24_BLACK, uint32_t bgColor = COLOR24_WHITE, uint8_t multiplier = 1) :
         Evt(DISP_DRAW_TEXT_REQ),
@@ -173,8 +178,8 @@ private:
     char m_text[MAX_TEXT_LEN];    // Null-terminated string to draw.
     int16_t m_x;
     int16_t m_y;
-    uint32_t m_textColor;         // 24-bit RGB
-    uint32_t m_bgColor;           // 24-bit RGB. Background color. If same as textColor, background is transparent.
+    uint32_t m_textColor;         // 24-bit RGB (888 xRGB).
+    uint32_t m_bgColor;           // 24-bit RGB (888 xRGB). Background color. If same as textColor, background is transparent.
     uint8_t m_multiplier;         // Font size multiplier. Must >= 1. If 1, same as original font size.
 };
 
@@ -184,11 +189,13 @@ public:
     enum {
         TIMEOUT_MS = 100
     };
+    // Color format is (888 xRGB).
     DispDrawRectReq(int16_t x, int16_t y, uint16_t w, uint16_t h, uint32_t color) :
         Evt(DISP_DRAW_RECT_REQ),
         m_x(x), m_y(y), m_w(w), m_h(h), m_color(color) {
         DISP_INTERFACE_ASSERT(w && h);
     }
+    // Color format is (888 xRGB).
     DispDrawRectReq(Hsmn to, Hsmn from, Sequence seq, int16_t x, int16_t y, uint16_t w, uint16_t h, uint32_t color) :
         Evt(DISP_DRAW_RECT_REQ, to, from, seq),
         m_x(x), m_y(y), m_w(w), m_h(h), m_color(color) {
@@ -204,7 +211,7 @@ private:
     int16_t m_y;
     uint16_t m_w;
     uint16_t m_h;
-    uint32_t m_color;         // 24-bit RGB
+    uint32_t m_color;         // 24-bit RGB (888 xRGB).
 };
 
 class DispDrawBitmapReq : public Evt {

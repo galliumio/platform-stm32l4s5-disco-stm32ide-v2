@@ -95,7 +95,8 @@ public:
 class UartOutStopReq : public Evt {
 public:
     enum {
-        TIMEOUT_MS = 100
+        TIMEOUT_MS = 2100       // It has to be greater than UartOut::ACTIVE_TIMEOUT_MS since
+                                // UartOutStopReq may be deferred in the Active state.
     };
     UartOutStopReq() :
         Evt(UART_OUT_STOP_REQ) {}

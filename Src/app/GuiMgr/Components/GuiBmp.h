@@ -84,7 +84,7 @@ public:
     void SetBitmap(uint32_t imgIdx, GUI_BITMAP const *bitmap);
     // dx is amount to shift right (+ve for right, -ve for left)
     void Update(int dx, uint32_t& imgIdx, uint32_t& offsetLeft, uint32_t& offsetRight);
-    void Paint();
+    Area Paint();
 
 private:
     uint32_t GetNextImgIdx() {

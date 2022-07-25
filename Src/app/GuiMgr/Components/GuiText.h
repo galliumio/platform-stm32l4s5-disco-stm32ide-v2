@@ -110,7 +110,7 @@ public:
     // dy is amount to shift down (+ve for down, -ve for up)
     // only up is supported
     void Update(int dy, uint32_t& bufIdx, uint32_t& offsetLeft, uint32_t& offsetRight);
-    void Paint();
+    Area Paint();
    
 private:
     uint32_t GetNextBufIdx() {

@@ -12,8 +12,8 @@ tempReg = 'SimpleReg'
 actObj = sys.argv[1]
 region = sys.argv[2]
 
-src = "./src/Template/" + tempReg
-actPath = "./src/" + actObj
+src = "./Src/app/Template/" + tempReg
+actPath = "./Src/app/" + actObj
 regPath = actPath + '/' + region
 
 if not os.path.exists(actPath):

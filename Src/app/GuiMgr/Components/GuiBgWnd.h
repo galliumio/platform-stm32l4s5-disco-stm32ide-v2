@@ -90,7 +90,7 @@ public:
     void SetColorIdx(uint32_t colorIdx0, uint32_t colorIdx1, GradientDir dir = GRADIENT_H);
     void SetColor(GUI_COLOR color0, GUI_COLOR color1, GradientDir dir = GRADIENT_H);
     void Update(int dc);
-    void Paint();
+    Area Paint();
     static GUI_COLOR GetRgb(uint32_t colorIdx);  
     
 private:

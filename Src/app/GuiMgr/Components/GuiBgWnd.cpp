@@ -111,7 +111,7 @@ void GuiBgWnd::IncColorIdx(uint32_t &idx, int dc) {
     idx = (uint32_t)i;     
 }
 
-void GuiBgWnd::Paint() {
+Area GuiBgWnd::Paint() {
     FW_ASSERT(m_hWin);
     WM_SelectWindow(m_hWin);
     if (m_dir == GRADIENT_H) {
@@ -120,6 +120,7 @@ void GuiBgWnd::Paint() {
     else {
         GUI_DrawGradientV(0, 0, m_xSize - 1, m_ySize - 1, m_color0, m_color1);
     }
+    return GetArea();
 }
 
 GUI_COLOR GuiBgWnd::GetRgb(uint32_t colorIdx) {

@@ -44,6 +44,8 @@
 #include "fw_timer.h"
 #include "fw_evt.h"
 #include "app_hsmn.h"
+#include "Headlight.h"
+#include "Motor.h"
 
 using namespace QP;
 using namespace FW;
@@ -61,12 +63,24 @@ protected:
         static QState Starting(Train * const me, QEvt const * const e);
         static QState Stopping(Train * const me, QEvt const * const e);
         static QState Started(Train * const me, QEvt const * const e);
+            static QState Normal(Train * const me, QEvt const * const e);
+            static QState Faulted(Train * const me, QEvt const * const e);
 
     Evt m_inEvt;                // Static event copy of a generic incoming req to be confirmed. Added more if needed.
     Timer m_stateTimer;
+    Timer m_headlightTimer;
+    Headlight m_headlight;      // Orthogonal region for headlight control.
+    Motor m_motor;              // Orthogonal region for motor control.
+    MsgSeqRec m_headlightSeq;   // Keeps track of sequence numbers of outgoing messages to HEADLIGHT.
+
+    enum {
+        HEADLIGHT_SET_TIMEOUT_MS = 10200,
+        HEADLIGHT_PATTERN_TIMEOUT_MS = 200,
+    };
 
 #define TRAIN_TIMER_EVT \
-    ADD_EVT(STATE_TIMER)
+    ADD_EVT(STATE_TIMER) \
+    ADD_EVT(HEADLIGHT_TIMER)
 
 #define TRAIN_INTERNAL_EVT \
     ADD_EVT(DONE) \

@@ -80,7 +80,7 @@ WM_HWIN GuiTicker::Create(Active *owner, WM_HWIN hParent, int xPos, int yPos, in
     return m_hWin;
 }
 
-void GuiTicker::SetText(uint32_t bufIdx, const char *pText, const GUI_FONT *pFont, GUI_COLOR textColor, GUI_COLOR bgColor) {
+void GuiTicker::SetText(uint32_t bufIdx, const char *pText, const GUI_FONT *pFont, GUI_COLOR textColor, GUI_COLOR bgColor, int align) {
     FW_ASSERT(pText);
     FW_ASSERT(m_hWin);
     FW_ASSERT(bufIdx < m_bufCnt);
@@ -94,6 +94,8 @@ void GuiTicker::SetText(uint32_t bufIdx, const char *pText, const GUI_FONT *pFon
     if (m_xSizeText[bufIdx] < (m_xSize - 2)) {
         m_xSizeText[bufIdx] = m_xSize - 2;
     }
+    // Alignment is only meaningful when text width is smaller than m_xSize - 2.
+    m_align[bufIdx] = align;
     WM_Invalidate(m_hWin);            
 }
 
@@ -117,7 +119,7 @@ void GuiTicker::Update(int dx, uint32_t& bufIdx, uint32_t& offsetLeft, uint32_t&
     return;
 }
 
-void GuiTicker::Paint() {
+Area GuiTicker::Paint() {
     FW_ASSERT(m_hWin);
     WM_SelectWindow(m_hWin);
     FW_ASSERT(m_bufIdx < m_bufCnt);
@@ -126,16 +128,28 @@ void GuiTicker::Paint() {
     GUI_SetTextMode(GUI_TM_TRANS);
     GUI_SetFont(m_pFont[m_bufIdx]);
     GUI_SetColor(m_textColor[m_bufIdx]);
-    GUI_DispStringAt(m_textBuf[m_bufIdx], m_vxPos+1, m_vyPos);
+    GUI_RECT rect;
+    rect.x0 = m_vxPos + 1;
+    rect.y0 = m_vyPos;
+    rect.x1 = rect.x0 + m_xSizeText[m_bufIdx] - 1;
+    rect.y1 = rect.y0 + m_ySize - 1;
+    //GUI_DispStringAt(m_textBuf[m_bufIdx], m_vxPos+1, m_vyPos);
+    GUI_DispStringInRect(m_textBuf[m_bufIdx], &rect, m_align[m_bufIdx]);
     uint32_t nextIdx = GetNextBufIdx();
     FW_ASSERT(nextIdx < m_bufCnt);
     GUI_SetFont(m_pFont[nextIdx]);
     GUI_SetColor(m_bgColor[nextIdx]);
     GUI_FillRect(m_vxPos + m_xSizeText[m_bufIdx], m_vyPos, m_xSize-2, m_ySize-2);
     GUI_SetColor(m_textColor[nextIdx]);
-    GUI_DispStringAt(m_textBuf[nextIdx], m_vxPos + m_xSizeText[m_bufIdx] + 1, m_vyPos);
+    rect.x0 = m_vxPos + m_xSizeText[m_bufIdx] + 1;
+    rect.y0 = m_vyPos;
+    rect.x1 = rect.x0 + m_xSizeText[nextIdx] - 1;
+    rect.y1 = rect.y0 + m_ySize - 1;
+    //GUI_DispStringAt(m_textBuf[nextIdx], m_vxPos + m_xSizeText[m_bufIdx] + 1, m_vyPos);
+    GUI_DispStringInRect(m_textBuf[nextIdx], &rect, m_align[nextIdx]);
     GUI_SetColor(m_borColor);   
-    GUI_DrawRoundedFrame(0, 0, m_xSize - 1, m_ySize - 1, 0, 1);     
+    GUI_DrawRoundedFrame(0, 0, m_xSize - 1, m_ySize - 1, 0, 1);
+    return GetArea();
 }
 
 }

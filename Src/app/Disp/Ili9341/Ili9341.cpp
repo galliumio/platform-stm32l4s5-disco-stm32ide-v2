@@ -239,26 +239,30 @@ void Ili9341::DeactivateCs(LcdSel lcd) {
 }
 
 bool Ili9341::SpiWriteDma(uint8_t const *buf, uint32_t len, LcdSel lcd) {
-    bool status = false;
+    bool status = true;
     ActivateCs(lcd);
-
-    while (len){
-        //ActivateCs(lcd);
-
-        uint32_t writeLen = LESS(len, 0x8000);
+    while (len && status) {
+        uint32_t writeLen = LESS(len, 0xFFF0);
         // Needs to cast away const-ness. It has been verified that HAL_SPI_Transmit_DMA does not write to buf.
-        if (HAL_SPI_Transmit_DMA(&m_hal, const_cast<uint8_t *>(buf), writeLen) == HAL_OK) {
-            status = m_spiSem.wait(BSP_MSEC_TO_TICK(100000));
-            // @todo - There may be a bug in QXK that after a semaphore wait times out, the "waitSet" is not cleared but no task
-            //         is waiting on the semaphore. It triggers an assert at qxk_sema.cpp line 220 when the semaphore is signaled again
-            //         in HAL_SPI_TxCpltCallback() in stm32f4xx_it.cpp (before it is waited on again here.)
-            //
-        }
+        status = (HAL_SPI_Transmit_DMA(&m_hal, const_cast<uint8_t *>(buf), writeLen) == HAL_OK);
+        status = status ? m_spiSem.wait(BSP_MSEC_TO_TICK(1000)) : false;
         len -= writeLen;
         buf += writeLen;
-        //DeactivateCs(lcd);
+    }
+    DeactivateCs(lcd);
+    return status;
+}
 
-        //m_container.DelayMs(20);
+bool Ili9341::SpiWriteInt(uint8_t const *buf, uint32_t len, LcdSel lcd) {
+    bool status = true;
+    ActivateCs(lcd);
+    while (len && status) {
+        uint32_t writeLen = LESS(len, 0xFFF0);
+        // Needs to cast away const-ness. It has been verified that HAL_SPI_Transmit_DMA does not write to buf.
+        status = (HAL_SPI_Transmit_IT(&m_hal, const_cast<uint8_t *>(buf), writeLen) == HAL_OK);
+        status = status ? m_spiSem.wait(BSP_MSEC_TO_TICK(1000)) : false;
+        len -= writeLen;
+        buf += writeLen;
     }
     DeactivateCs(lcd);
     return status;
@@ -278,13 +282,19 @@ bool Ili9341::SpiReadDma(uint8_t *buf, uint16_t len, LcdSel lcd) {
 
 void Ili9341::WriteCmd(uint8_t cmd) {
     HAL_GPIO_WritePin(m_config->dcPort, m_config->dcPin, GPIO_PIN_RESET);
-    bool status = SpiWriteDma(&cmd, 1);
+    //bool status = SpiWriteDma(&cmd, 1);
+    bool status = SpiWriteInt(&cmd, 1);
     FW_ASSERT(status);
 }
 
 void Ili9341::WriteDataBuf(uint8_t const *buf, uint32_t len) {
     HAL_GPIO_WritePin(m_config->dcPort, m_config->dcPin, GPIO_PIN_SET);
-    bool status = SpiWriteDma(buf, len);
+    bool status;
+    if (len <= 4) {
+        status = SpiWriteInt(buf, len);
+    } else {
+        status = SpiWriteDma(buf, len);
+    }
     FW_ASSERT(status);
 }
 
@@ -494,19 +504,6 @@ void Ili9341::WriteBitmap(int16_t x, int16_t y, uint16_t w, uint16_t h, uint8_t 
     }
 
     SetAddrWindow(x, y, w, h);
-    /*
-    while (len){
-        uint32_t writeLen = LESS(len, sizeof(m_buffer));
-        for (uint32_t i = 0; i < writeLen; i+=2) {
-            m_buffer[i] = buf[i+1];
-            m_buffer[i+1] = buf[i];
-        }
-        WriteDataBuf(m_buffer, writeLen);
-        len -= writeLen;
-        buf += writeLen;
-        //m_container.DelayMs(5);
-    }
-    */
     WriteDataBuf(buf, len);
 }
 
@@ -579,7 +576,7 @@ QState Ili9341::Stopped(Ili9341 * const me, QEvt const * const e) {
         }
         case DISP_START_REQ: {
             EVENT(e);
-            Evt const &req = EVT_CAST(*e);
+            auto const &req = static_cast<DispStartReq const &>(*e);
             me->InitSpi();
             if (me->InitHal()) {
                 me->m_client = req.GetFrom();
@@ -587,8 +584,12 @@ QState Ili9341::Stopped(Ili9341 * const me, QEvt const * const e) {
                 // it is ready to be used when a user gets the cfm event.
                 me->ResetDisp();
                 me->InitDisp();
-                // @todo Get rotation from request. '3' means landscape.
-                me->SetRotation(3);
+                uint8_t rotation = req.GetRotation();
+                if (rotation > 3) {
+                    WARNING("Invalid rotation (%d). Default to 0", rotation);
+                    rotation = 0;
+                }
+                me->SetRotation(rotation);
                 me->FillScreen(COLOR565_WHITE);
                 me->SendCfm(new DispStartCfm(ERROR_SUCCESS), req);
                 me->Raise(new Evt(START));

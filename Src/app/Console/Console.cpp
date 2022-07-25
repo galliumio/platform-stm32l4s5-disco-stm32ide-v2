@@ -75,7 +75,7 @@ static char const * const interfaceEvtName[] = {
 };
 
 enum {
-    OUT_FIFO_ORDER = 13,
+    OUT_FIFO_ORDER = 14,
     IN_FIFO_ORDER = 10,
 };
 

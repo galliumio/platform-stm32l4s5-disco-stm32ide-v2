@@ -82,6 +82,7 @@ protected:
     void ActivateCs(LcdSel lcd);
     void DeactivateCs(LcdSel lcd);
     bool SpiWriteDma(uint8_t const *buf, uint32_t len, LcdSel lcd = LCD_BOTH);
+    bool SpiWriteInt(uint8_t const *buf, uint32_t len, LcdSel lcd = LCD_BOTH);
     bool SpiReadDma(uint8_t *buf, uint16_t len, LcdSel lcd);
     void WriteCmd(uint8_t cmd);
     void WriteDataBuf(uint8_t const *buf, uint32_t len);

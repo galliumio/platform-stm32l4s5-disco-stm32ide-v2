@@ -36,51 +36,39 @@
  * Email - admin@galliumstudio.com
  ******************************************************************************/
 
-#ifndef FW_INLINE_H
-#define FW_INLINE_H
+#ifndef COLORS_H
+#define COLORS_H
 
-#include "qpcpp.h"
-#include "fw_assert.h"
+#include <stdint.h>
 #include "fw_macro.h"
+#include "fw_assert.h"
 
-#define FW_INLINE_ASSERT(t_) ((t_) ? (void)0 : Q_onAssert("fw_inline.h", (int_t)__LINE__))
+#define COLORS_ASSERT(t_) ((t_) ? (void)0 : Q_onAssert("Colors.h", (int)__LINE__))
 
+namespace APP {
 
-// Include the following inline functions defined in ../qpcpp/source/qf_pkg.h.
-// They are required to access private members of QEvt.
-// Alternatively we can include ../qpcpp/source/qf_pkg.h. But that header file
-// was intended for internal use within qpcpp.
-// Note - In qpcpp 5.9.7 QF_EVT_POOL_ID_() and QF_EVT_REF_CTR_() were
-//        removed from qf_pkg.h. They are still "friends" of class QEvt.
-//        If they are removed as "friends" in the future they need to be patched.
-
-//! helper macro to cast const away from an event pointer @p e_
-#define QF_EVT_CONST_CAST_(e_) const_cast<QEvt *>(e_)
-namespace QP {
-//! access to the poolId_ of an event @p e
-inline uint8_t QF_EVT_POOL_ID_(QEvt const * const e) { return e->poolId_; }
-//! access to the refCtr_ of an event @p e
-inline uint8_t QF_EVT_REF_CTR_(QEvt const * const e) { return e->refCtr_; }
-//! decrement the refCtr_ of an event @p e
-inline void QF_EVT_REF_CTR_DEC_(QEvt const * const e) {
-    --(QF_EVT_CONST_CAST_(e))->refCtr_;
-}
-} // namespace QP
-
-// @param count - No. of entries in the 'from' array to be copied
-//                (limited by the size of the 'to' array).
-template <class T, size_t N>
-void ArrayCopy(T (&to)[N], T const *from, uint32_t count) {
-    FW_INLINE_ASSERT(from);
-    count = LESS(count, N);
-    for (uint32_t i = 0; i < count; i++) {
-        to[i] = from[i];
+// Helper class for color format (888 xBGR).
+class Color888Bgr {
+public:
+    Color888Bgr(uint32_t color) : m_color(color) {}
+    void Set(uint32_t color) { m_color = color; }
+    void Set(uint8_t red, uint8_t green, uint8_t blue) {
+        m_color = BYTE_TO_LONG(0, blue, green, red);
     }
+    uint32_t Get() const { return m_color; }
+    uint8_t Red() const { return BYTE_0(m_color); }
+    uint8_t Green() const { return BYTE_1(m_color); }
+    uint8_t Blue() const { return BYTE_2(m_color); }
+    bool operator==(Color888Bgr const &c) {
+        return m_color == c.Get();
+    }
+    bool operator!=(Color888Bgr const &c) {
+        return m_color != c.Get();
+    }
+private:
+    uint32_t m_color;   // (888 xBGR).
+};
+
 }
 
-template <class T, size_t N, size_t M>
-void ArrayCopy(T (&to)[N], T const (&from)[M]) {
-    ArrayCopy(to, from, M);
-}
-
-#endif // FW_INLINE_H
+#endif // GRAPHICS_H

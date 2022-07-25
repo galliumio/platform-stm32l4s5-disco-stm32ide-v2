@@ -92,7 +92,7 @@ TIM_HandleTypeDef Periph::m_tim3Hal;
 // Motor EN (GPIO) - PB.1 TIM3 Channel 4
 #endif
 // WS2812 (PWM) PA.15 TIM2 Channel 1
-//              DMA
+//              DMA2 Channel 5 DMA_REQUEST_TIM2_CH1
 // ESP8266 (UART) TX PA.0
 //                RX PA.1
 //

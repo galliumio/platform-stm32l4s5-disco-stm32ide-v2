@@ -48,6 +48,8 @@
 
 #define MSG_CAST(m_)            static_cast<FW::Msg const &>(m_)
 #define ERROR_MSG_CAST(m_)      static_cast<FW::ErrorMsg const &>(m_)
+#define MSG_EVT_CAST(e_)        static_cast<FW::MsgEvt const &>(e_)
+#define ERROR_MSG_EVT_CAST(e_)  static_cast<FW::ErrorMsgEvt const &>(e_)
 
 namespace FW {
 
@@ -55,6 +57,7 @@ namespace FW {
 
 #define MSG_ERROR_SUCCESS   "SUCCESS"       // No error, success.
 #define MSG_ERROR_UNSPEC    "UNSPEC"        // Unspecified.
+#define MSG_ERROR_ABORTED   "ABORTED"       // Aborted before completion.
 #define MSG_ERROR_TIMEOUT   "TIMEOUT"       // Timeout.
 #define MSG_ERROR_HAL       "HAL"           // HAL driver error.
 #define MSG_ERROR_HARDWARE  "HARDWARE"      // Hardware error.
@@ -62,9 +65,8 @@ namespace FW {
 #define MSG_ERROR_STATE     "STATE"         // Invalid state.
 #define MSG_ERROR_UNAVAIL   "UNAVAIL"       // Resource unavailable, busy.
 #define MSG_ERROR_PARAM     "PARAM"         // Invalid parameter, out of range.
-#define MSG_ERROR_AUTH      "AUTH"          // Authentication error.
 #define MSG_ERROR_NETWORK   "NETWORK"       // Network error.
-#define MSG_ERROR_ABORT     "ABORT"         // Operation aborted, e.g. gets a stop req or close req before an ongoing request is completed.
+#define MSG_ERROR_AUTH      "AUTH"          // Authentication error.
 
 #define MSG_REASON_UNSPEC   "UNSPEC"        // Unspecified reason.
 

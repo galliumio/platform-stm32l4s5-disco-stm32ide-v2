@@ -11,8 +11,8 @@ if len(sys.argv) < 2:
 tempAct = 'SimpleAct'
 actObj = sys.argv[1]
 
-src = "./src/Template/" + tempAct
-actPath = "./src/" + actObj
+src = "./Src/app/Template/" + tempAct
+actPath = "./Src/app/" + actObj
 
 if os.path.exists(actPath):
     print("Path", actPath, "already exists.")

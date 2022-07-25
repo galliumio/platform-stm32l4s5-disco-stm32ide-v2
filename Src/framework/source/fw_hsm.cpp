@@ -80,18 +80,20 @@ void Hsm::SendReq(Evt *e, Hsmn to, bool reset, EvtSeqRec &seqRec) {
 
 // @description Standard handling of a confirmation or response event.
 // @param[in] e - Event to handle.
-// @param[out] allReceived -  Set to true if all expected confirmation/response have been received without errors.
-// @return Handling status - true if the event was handled without error. This includes the event being ignored
-//                           due to sequence number mismatch.
-//                           false if the event matches sequence number and reports an error.
+// @param[out] allReceived -  Set to true if all expected cfm/rsp (success or failure with matched sequence) have been
+//                            received (i.e. seqRec empty), including the case when seqRec is already empty at start.
+// @return Handling status - true if (1) the event matches sequence and reports success,
+//                           (2) the event is ignored due to sequence mismatch,
+//                           (3) seqRec is already empty at start.
+//                           false if the event matches sequence and reports an error.
 bool Hsm::CheckCfm(ErrorEvt const &e, bool &allReceived, EvtSeqRec &seqRec) {
-    allReceived = false;
+    allReceived = seqRec.IsAllCleared();
+    // If allReceived is true, seqRec.Match() below must return false and this function returns true.
     if (seqRec.Match(e.GetFrom(), e.GetSeq())) {
+        // Matched sequence in seqRec is auto-cleared.
+        allReceived = seqRec.IsAllCleared();
         if (e.GetError() != ERROR_SUCCESS) {
             return false;
-        }
-        if(seqRec.IsAllCleared()) {
-            allReceived = true;
         }
     }
     return true;
@@ -126,18 +128,20 @@ void Hsm::SendCfmMsg(MsgEvt *e, MsgEvt &savedReq) {
 
 // @description Standard handling of a confirmation or response message.
 // @param[in] e - Message event to handle.
-// @param[out] allReceived -  Set to true if all expected confirmation/response have been received without errors.
-// @return Handling status - true if the message was handled without error. This includes the message being ignored
-//                           due to sequence number mismatch.
-//                           false if the message matches sequence number and reports an error.
+// @param[out] allReceived -  Set to true if all expected cfm/rsp (success or failure with matched sequence) have been
+//                            received (i.e. seqRec empty), including the case when seqRec is already empty at start.
+// @return Handling status - true if (1) the message matches sequence and reports success,
+//                           (2) the message is ignored due to sequence mismatch,
+//                           (3) seqRec is already empty at start.
+//                           false if the message matches sequence and reports an error.
 bool Hsm::CheckCfmMsg(ErrorMsgEvt const &e, bool &allReceived, MsgSeqRec &seqRec) {
-    allReceived = false;
+    allReceived = seqRec.IsAllCleared();
+    // If allReceived is true, seqRec.Match() below must return false and this function returns true.
     if (seqRec.Match(e.GetMsgFrom(), e.GetMsgSeq())) {
+        // Matched sequence in seqRec is auto-cleared.
+        allReceived = seqRec.IsAllCleared();
         if (!e.GetErrorMsg().IsSuccess()) {
             return false;
-        }
-        if(seqRec.IsAllCleared()) {
-            allReceived = true;
         }
     }
     return true;

@@ -95,8 +95,8 @@
 #include "AOWashingMachine.h"
 #include "Traffic.h"
 #include "LevelMeter.h"
-#include "Motor.h"
 #include "Train.h"
+#include "Ws2812.h"
 #include "UartAct.h"
 #include "GuiMgr.h"
 #include "SystemInterface.h"
@@ -135,8 +135,8 @@ static SensorThread sensorThread;
 static GuiMgr guiMgr;
 static WifiThread wifiThread;
 static Node node;
-static Motor motor;
 static Train train;
+static Ws2812 ws2812(WS2812, "WS2812");
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
@@ -189,8 +189,8 @@ int main(void)
     guiMgr.Start(PRIO_GUI_MGR);
     wifiThread.Start(PRIO_WIFI);
     node.Start(PRIO_NODE);
-    motor.Start(PRIO_MOTOR);
     train.Start(PRIO_TRAIN);
+    ws2812.Start(PRIO_WS2812);
     sys.Start(PRIO_SYSTEM);
 
     // Kick off the topmost active objects.

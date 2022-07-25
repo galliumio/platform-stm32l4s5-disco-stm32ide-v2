@@ -201,7 +201,7 @@ void Motor::Disable() {
 }
 
 // @param rate - Rate of change of speed in PWM permil level.
-// @retrun Step size in PWM level per timeout period with a minimum of 1.
+// @return Step size in PWM level per timeout period with a minimum of 1.
 uint16_t Motor::CalStep(uint16_t rate) {
     FW_ASSERT((SPEED_TIMEOUT_MS > 0) && (SPEED_TIMEOUT_MS < 1000));
     uint16_t step = rate / (1000 / SPEED_TIMEOUT_MS);
@@ -209,7 +209,7 @@ uint16_t Motor::CalStep(uint16_t rate) {
 }
 
 Motor::Motor() :
-    Active((QStateHandler)&Motor::InitialPseudoState, MOTOR, "MOTOR"),
+    Region((QStateHandler)&Motor::InitialPseudoState, MOTOR, "MOTOR"),
     m_hal(NULL), m_inEvt(QEvt::STATIC_EVT), m_inMsg(QEvt::STATIC_EVT),
     m_dir(MotorDir::FORWARD), m_setSpeed(0), m_revSpeed(0), m_revAccel(0), m_speed(0), m_step(0),
     m_stateTimer(GetHsmn(), STATE_TIMER), m_speedTimer(GetHsmn(), SPEED_TIMER),
@@ -254,7 +254,7 @@ QState Motor::Root(Motor * const me, QEvt const * const e) {
         case MOTOR_RUN_REQ: {
             EVENT(e);
             auto const &req = static_cast<MotorRunReq const &>(*e);
-            me->SendCfmMsg(new MotorRunCfm(MotorRunCfmMsg(MSG_ERROR_STATE, req.GetMsgTo())), req);
+            me->SendCfmMsg(new MotorRunCfm(MSG_ERROR_STATE, req.GetMsgTo()), req);
             return Q_HANDLED();
         }
         case MOTOR_STOP_REQ: {
@@ -333,7 +333,6 @@ QState Motor::Stopping(Motor * const me, QEvt const * const e) {
             EVENT(e);
             uint32_t timeout = MotorStopReq::TIMEOUT_MS;
             me->m_stateTimer.Start(timeout);
-            // For testing, send DONE immediately. Do not use Raise() in entry action.
             // Since there is no other cleanup, send DONE immediately. Do not use Raise() in entry action.
             me->Send(new Evt(DONE), me->GetHsmn());
             return Q_HANDLED();
@@ -384,7 +383,7 @@ QState Motor::Started(Motor * const me, QEvt const * const e) {
         case MOTOR_RUN_REQ: {
             EVENT(e);
             auto const &req = static_cast<MotorRunReq const &>(*e);
-            me->SendCfmMsg(new MotorRunCfm(MotorRunCfmMsg(MSG_ERROR_PARAM, req.GetMsgTo())), req);
+            me->SendCfmMsg(new MotorRunCfm(MSG_ERROR_PARAM, req.GetMsgTo()), req);
             return Q_HANDLED();
         }
     }
@@ -465,7 +464,7 @@ QState Motor::Running(Motor * const me, QEvt const * const e) {
             me->Raise(new Evt(HALT));
             // Sends cfm to previous run request if exists.
             FW_ASSERT((!me->m_inMsg.InUse()) || (me->m_inMsg.sig == MOTOR_RUN_REQ));
-            me->SendCfmMsg(new MotorRunCfm(MotorRunCfmMsg(MSG_ERROR_ABORT, me->m_inMsg.GetMsgTo())), me->m_inMsg);
+            me->SendCfmMsg(new MotorRunCfm(MSG_ERROR_ABORTED, me->m_inMsg.GetMsgTo()), me->m_inMsg);
             return Q_HANDLED();
         }
         case MOTOR_RUN_REQ: {
@@ -490,7 +489,7 @@ QState Motor::Running(Motor * const me, QEvt const * const e) {
                         me->Raise(new Evt(STABLE));
                     }
                 }
-                me->SendCfmMsg(new MotorRunCfm(MotorRunCfmMsg(MSG_ERROR_ABORT, me->m_inMsg.GetMsgTo())), me->m_inMsg);
+                me->SendCfmMsg(new MotorRunCfm(MSG_ERROR_ABORTED, me->m_inMsg.GetMsgTo()), me->m_inMsg);
                 me->m_inMsg = req;
                 return Q_HANDLED();
             }
@@ -638,7 +637,7 @@ QState Motor::Const(Motor * const me, QEvt const * const e) {
         case Q_ENTRY_SIG: {
             EVENT(e);
             FW_ASSERT(me->m_speed == me->m_setSpeed);
-            me->SendCfmMsg(new MotorRunCfm(MotorRunCfmMsg(MSG_ERROR_SUCCESS)), me->m_inMsg);
+            me->SendCfmMsg(new MotorRunCfm(MSG_ERROR_SUCCESS), me->m_inMsg);
             return Q_HANDLED();
         }
         case Q_EXIT_SIG: {

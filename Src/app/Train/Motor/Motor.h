@@ -40,7 +40,7 @@
 #define MOTOR_H
 
 #include "qpcpp.h"
-#include "fw_active.h"
+#include "fw_region.h"
 #include "fw_timer.h"
 #include "fw_evt.h"
 #include "app_hsmn.h"
@@ -52,7 +52,7 @@ using namespace FW;
 
 namespace APP {
 
-class Motor : public Active {
+class Motor : public Region {
 public:
     Motor();
 
@@ -127,8 +127,6 @@ protected:
     Pin m_in2Pin;
     Pin m_enPin;
     Evt m_inEvt;                    // Static event copy of a generic incoming request event to be confirmed. Add more if needed.
-    // @todo Remove.
-    //Msg m_inMsg;                    // Saved base of a generic incoming request message to be confirmed.
     MsgBaseEvt m_inMsg;             // Static event copy of the base of an incoming request message to be confirmed.
     MotorDir m_dir;
     uint16_t m_setSpeed;            // Target speed.

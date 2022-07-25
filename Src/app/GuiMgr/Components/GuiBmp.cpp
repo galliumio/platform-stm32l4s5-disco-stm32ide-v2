@@ -111,7 +111,7 @@ void GuiBmp::Update(int dx, uint32_t& imgIdx, uint32_t& offsetLeft, uint32_t& of
     return;
 }
 
-void GuiBmp::Paint() {
+Area GuiBmp::Paint() {
     FW_ASSERT(m_hWin);
     WM_SelectWindow(m_hWin);
     GUI_SetBkColor(0);
@@ -123,6 +123,7 @@ void GuiBmp::Paint() {
         FW_ASSERT(nextIdx < m_imgCnt);
         GUI_DrawBitmap(m_bitmap[nextIdx], m_vxPos + GetImgXSize(m_imgIdx), m_vyPos);
     }
+    return GetArea();
 }
 
 }

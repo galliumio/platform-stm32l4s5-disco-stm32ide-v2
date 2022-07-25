@@ -58,7 +58,6 @@ private:
     uint32_t m_y;
 };
 
-
 class Area {
 public:
     // (x, y) is the starting point at the upper left corner.
@@ -94,6 +93,11 @@ public:
         }
         return *this;
     }
+    bool operator==(Area const &a) const {
+        return (m_x == a.m_x) && (m_y == a.m_y) &&
+               (m_width == a.m_width) && (m_height == a.m_height);
+    }
+    // @todo Add IsInclude().
 private:
     uint32_t m_x;
     uint32_t m_y;

@@ -141,7 +141,8 @@ QState LedFrame::Starting(LedFrame * const me, QEvt const * const e) {
             uint32_t timeout = LedFrameStartReq::TIMEOUT_MS;
             FW_ASSERT(timeout > DispStartReq::TIMEOUT_MS);
             me->m_stateTimer.Start(timeout);
-            me->SendReq(new DispStartReq(), ILI9341, true);
+            // @todo Currently hardcodes rotation mode to 3. To be passed in via req.
+            me->SendReq(new DispStartReq(3), ILI9341, true);
             return Q_HANDLED();
         }
         case Q_EXIT_SIG: {

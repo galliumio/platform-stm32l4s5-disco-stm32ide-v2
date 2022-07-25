@@ -53,7 +53,7 @@ class Map {
 public:
     Map(KeyValue<Key, Value> kv[], uint32_t count, KeyValue<Key, Value> const &unusedKv) :
         m_kv(kv), m_count(count), m_unusedKv(unusedKv) {
-        // m_kv and m_count valided in Reset().
+        // m_kv and m_count validated in Reset().
         Reset();
     }
     // Default constructor with m_kv and m_count set to null/0. It allows an array of Map objects

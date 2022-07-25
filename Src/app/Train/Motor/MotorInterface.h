@@ -74,7 +74,7 @@ enum {
 class MotorStartReq : public Evt {
 public:
     enum {
-        TIMEOUT_MS = 200
+        TIMEOUT_MS = 100
     };
     MotorStartReq() :
         Evt(MOTOR_START_REQ) {}
@@ -111,6 +111,9 @@ public:
         MsgEvt(MOTOR_RUN_REQ, m_msg), m_msg(r) {
         MOTOR_INTERFACE_ASSERT(&GetMsgBase() == &m_msg);
     }
+    // Uses delegating constructor.
+    MotorRunReq(MotorDir dir, uint16_t speed, uint16_t accel, uint16_t decel) :
+        MotorRunReq(MotorRunReqMsg(dir, speed, accel, decel)) {}
     MotorDir GetDir() const { return m_msg.GetDir(); }
     uint32_t GetSpeed() const { return m_msg.GetSpeed(); }
     uint32_t GetAccel() const { return m_msg.GetAccel(); }
@@ -126,6 +129,8 @@ public:
         ErrorMsgEvt(MOTOR_RUN_CFM, m_msg), m_msg(r) {
         MOTOR_INTERFACE_ASSERT(&GetMsgBase() == &m_msg);
     }
+    MotorRunCfm(char const *error, char const *origin = MSG_UNDEF, char const *reason = MSG_REASON_UNSPEC) :
+        MotorRunCfm(MotorRunCfmMsg(error, origin, reason)) {}
 protected:
     MotorRunCfmMsg m_msg;
 };

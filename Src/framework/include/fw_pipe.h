@@ -302,6 +302,23 @@ public:
         }
     }
 
+    // Returns true if an entry equal to the specified entry is found in pipe.
+    // Comparison is done using the "==" operator.
+    // Index of first found entry is returned via the parameter index (if not null).
+    bool Find(Type const &e, uint32_t *index = nullptr) {
+        uint32_t currIndex = m_readIndex;
+        while (currIndex != m_writeIndex) {
+            if (m_stor[currIndex] == e) {
+                if (index) {
+                    *index = currIndex;
+                }
+                return true;
+            }
+            IncIndex(currIndex, 1);
+        }
+        return false;
+    }
+
 protected:
     // Write contiguous block to m_stor. count can be 0.
     // Without critical section.

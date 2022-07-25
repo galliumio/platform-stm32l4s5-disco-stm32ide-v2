@@ -53,7 +53,7 @@
 #include "LevelMeterInterface.h"
 #include "NodeInterface.h"
 #include "SensorInterface.h"
-#include "MotorInterface.h"
+#include "TrainInterface.h"
 #include "bsp.h"
 #include <vector>
 #include <memory>
@@ -62,9 +62,14 @@
 // Only one of the following can be enabled at a time.
 //#define ENABLE_TRAFFIC
 //#define ENABLE_LEVEL_METER
+#define ENABLE_TRAIN
 
 #if (defined(ENABLE_TRAFFIC) && defined(ENABLE_LEVEL_METER))
 #error ENABLE_TRAFFIC and ENABLE_LEVEL_METER cannot be both defined
+#endif
+
+#if (defined(ENABLE_TRAIN) && defined(ENABLE_LEVEL_METER))
+#error ENABLE_TRAIN and ENABLE_LEVEL_METER cannot be both defined
 #endif
 
 FW_DEFINE_THIS_FILE("System.cpp")
@@ -231,7 +236,6 @@ QState System::Starting1(System * const me, QEvt const * const e) {
     switch (e->sig) {
         case Q_ENTRY_SIG: {
             EVENT(e);
-			me->SendReq(new GuiMgrStartReq(), GUI_MGR, true);
             me->SendReq(new CompositeActStartReq(), COMPOSITE_ACT, true);
             me->SendReq(new SimpleActStartReq(), SIMPLE_ACT, false);
             me->SendReq(new DemoStartReq(), DEMO, false);
@@ -242,14 +246,12 @@ QState System::Starting1(System * const me, QEvt const * const e) {
             me->SendReq(new GpioInStartReq(), USER_BTN, false);
             me->SendReq(new GpioOutStartReq(), USER_LED, false);
             me->SendReq(new NodeStartReq(SRV_DOMAIN, SRV_PORT), NODE, false);
-            me->SendReq(new MotorStartReq(), MOTOR, false);
             return Q_HANDLED();
         }
         case Q_EXIT_SIG: {
             EVENT(e);
             return Q_HANDLED();
         }
-        case GUI_MGR_START_CFM:        
         case COMPOSITE_ACT_START_CFM:
         case SIMPLE_ACT_START_CFM:
         case DEMO_START_CFM:
@@ -257,8 +259,7 @@ QState System::Starting1(System * const me, QEvt const * const e) {
         case TRAFFIC_START_CFM:
         case GPIO_IN_START_CFM:
         case GPIO_OUT_START_CFM:
-        case NODE_START_CFM:
-        case MOTOR_START_CFM: {
+        case NODE_START_CFM: {
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
             ERROR_EVENT(cfm);
             bool allReceived;
@@ -313,17 +314,23 @@ QState System::Starting3(System * const me, QEvt const * const e) {
             EVENT(e);
 #ifdef ENABLE_LEVEL_METER
             me->SendReq(new LevelMeterStartReq(), LEVEL_METER, true);
-            return Q_HANDLED();
+#elif defined(ENABLE_TRAIN)
+            // Since WS2812 used by Train conflicts with the Adafruit LCD module, one must NOT enable USE_ADAFRUIT_TFT in Ili9341.cpp.
+            // Otherwise, one must disable either GuiMgr or Train to avoid the conflict (D/CX PA.15).
+            me->SendReq(new GuiMgrStartReq(), GUI_MGR, true);
+            me->SendReq(new TrainStartReq(), TRAIN, false);
 #else
             me->Send(new Evt(DONE), me->GetHsmn());
-            return Q_HANDLED();
 #endif
+            return Q_HANDLED();
         }
         case Q_EXIT_SIG: {
             EVENT(e);
             return Q_HANDLED();
         }
-        case LEVEL_METER_START_CFM: {
+        case LEVEL_METER_START_CFM:
+        case GUI_MGR_START_CFM:
+        case TRAIN_START_CFM: {
             EVENT(e);
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
             bool allReceived;
@@ -382,13 +389,17 @@ QState System::Stopping1(System * const me, QEvt const * const e) {
         case Q_ENTRY_SIG: {
             EVENT(e);
             me->SendReq(new LevelMeterStopReq(), LEVEL_METER, true);
+            me->SendReq(new GuiMgrStopReq(), GUI_MGR, false);
+            me->SendReq(new TrainStopReq(), TRAIN, false);
             return Q_HANDLED();
         }
         case Q_EXIT_SIG: {
             EVENT(e);
             return Q_HANDLED();
         }
-        case LEVEL_METER_STOP_CFM: {
+        case LEVEL_METER_STOP_CFM:
+        case GUI_MGR_STOP_CFM:
+        case TRAIN_STOP_CFM: {
             EVENT(e);
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
             bool allReceived;
@@ -411,7 +422,6 @@ QState System::Stopping2(System * const me, QEvt const * const e) {
     switch (e->sig) {
         case Q_ENTRY_SIG: {
             EVENT(e);
-            me->SendReq(new GuiMgrStopReq(), GUI_MGR, true);
             me->SendReq(new CompositeActStopReq(), COMPOSITE_ACT, true);
             me->SendReq(new SimpleActStopReq(), SIMPLE_ACT, false);
             me->SendReq(new DemoStopReq(), DEMO, false);
@@ -427,7 +437,6 @@ QState System::Stopping2(System * const me, QEvt const * const e) {
             EVENT(e);
             return Q_HANDLED();
         }
-        case GUI_MGR_STOP_CFM:
         case COMPOSITE_ACT_STOP_CFM:
         case SIMPLE_ACT_STOP_CFM:
         case DEMO_STOP_CFM:

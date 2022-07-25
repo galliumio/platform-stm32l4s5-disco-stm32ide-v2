@@ -77,6 +77,7 @@
 #include "GpioIn.h"
 #include "Sensor.h"
 #include "Wifi.h"
+#include "Ws2812.h"
 #include "fw_log.h"
 
 /* USER CODE BEGIN 0 */
@@ -320,5 +321,21 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hal) {
         Wifi::SignalSpiSem();
     }
 }
+
+// WS2812 DMA
+// Must be declared as extern "C" in header.
+extern "C" void DMA2_Channel5_IRQHandler(void) {
+    QXK_ISR_ENTRY();
+    DMA_HandleTypeDef *dma = Ws2812::Hsm2Dma(WS2812);
+    HAL_DMA_IRQHandler(dma);
+    QXK_ISR_EXIT();
+}
+
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *hal) {
+    // @todo Determine which component to callback.
+    Ws2812::DmaCompleteCallback(hal);
+}
+
+
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

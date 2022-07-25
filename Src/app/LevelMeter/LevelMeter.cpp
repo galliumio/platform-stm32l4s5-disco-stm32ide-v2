@@ -323,7 +323,7 @@ QState LevelMeter::Started(LevelMeter * const me, QEvt const * const e) {
             me->Raise(new Evt(REDRAW));
             // @todo Currently when the destination (to) of a msg is undefined, the server sends to all nodes.
             //       This will be changed to pub-sub in the future.
-            me->SendIndMsg(new LevelMeterDataInd(SensorDataIndMsg(me->m_pitch, me->m_roll)), NODE, MSG_UNDEF, true, me->m_msgSeq);
+            me->SendIndMsg(new LevelMeterDataInd(me->m_pitch, me->m_roll), NODE, MSG_UNDEF, true, me->m_msgSeq);
             return Q_HANDLED();
         }
         case LEVEL_METER_CONTROL_REQ: {

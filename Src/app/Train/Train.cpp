@@ -39,6 +39,8 @@
 #include "app_hsmn.h"
 #include "fw_log.h"
 #include "fw_assert.h"
+#include "MotorInterface.h"
+#include "HeadlightInterface.h"
 #include "TrainInterface.h"
 #include "Train.h"
 
@@ -66,7 +68,8 @@ static char const * const interfaceEvtName[] = {
 
 Train::Train() :
     Active((QStateHandler)&Train::InitialPseudoState, TRAIN, "TRAIN"), m_inEvt(QEvt::STATIC_EVT),
-    m_stateTimer(GetHsmn(), STATE_TIMER) {
+    m_stateTimer(GetHsmn(), STATE_TIMER), m_headlightTimer(GetHsmn(), HEADLIGHT_TIMER),
+    m_headlightSeq("") {
     SET_EVT_NAME(TRAIN);
 }
 
@@ -79,6 +82,9 @@ QState Train::Root(Train * const me, QEvt const * const e) {
     switch (e->sig) {
         case Q_ENTRY_SIG: {
             EVENT(e);
+            // Initialize regions.
+            me->m_headlight.Init(me);
+            me->m_motor.Init(me);
             return Q_HANDLED();
         }
         case Q_EXIT_SIG: {
@@ -134,14 +140,12 @@ QState Train::Starting(Train * const me, QEvt const * const e) {
         case Q_ENTRY_SIG: {
             EVENT(e);
             uint32_t timeout = TrainStartReq::TIMEOUT_MS;
-            //FW_ASSERT(timeout > XxxStartReq::TIMEOUT_MS);
+            FW_ASSERT(timeout > HeadlightStartReq::TIMEOUT_MS);
+            FW_ASSERT(timeout > MotorStartReq::TIMEOUT_MS);
             me->m_stateTimer.Start(timeout);
-            //me->SendReq(new XxxStartReq(), XXX, true);
-            //me->SendReq(new YyyStartReq(), YYY, false);
-            //me->SendReq(new ZzzStartReq(), ZZZ, false);
-            //...
-            // For testing, send DONE immediately. Do not use Raise() in entry action.
-            me->Send(new Evt(DONE), me->GetHsmn());
+            // Test only - Disables headlight to avoid conflict with GuiMgr using Adafruit LCD module.
+            me->SendReq(new HeadlightStartReq(), HEADLIGHT, true);
+            me->SendReq(new MotorStartReq(), MOTOR, false);
             return Q_HANDLED();
         }
         case Q_EXIT_SIG: {
@@ -149,8 +153,8 @@ QState Train::Starting(Train * const me, QEvt const * const e) {
             me->m_stateTimer.Stop();
             return Q_HANDLED();
         }
-        /*
-        case XXX_START_CFM: {
+        case HEADLIGHT_START_CFM:
+        case MOTOR_START_CFM: {
             EVENT(e);
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
             bool allReceived;
@@ -161,7 +165,6 @@ QState Train::Starting(Train * const me, QEvt const * const e) {
             }
             return Q_HANDLED();
         }
-        */
         case FAILED:
         case STATE_TIMER: {
             EVENT(e);
@@ -187,14 +190,11 @@ QState Train::Stopping(Train * const me, QEvt const * const e) {
         case Q_ENTRY_SIG: {
             EVENT(e);
             uint32_t timeout = TrainStopReq::TIMEOUT_MS;
-            //FW_ASSERT(timeout > XxxStopReq::TIMEOUT_MS);
+            FW_ASSERT(timeout > HeadlightStopReq::TIMEOUT_MS);
+            FW_ASSERT(timeout > MotorStopReq::TIMEOUT_MS);
             me->m_stateTimer.Start(timeout);
-            //me->SendReq(new XxxStopReq(), XXX, true);
-            //me->SendReq(new YyyStopReq(), YYY, false);
-            //me->SendReq(new ZzzStopReq(), ZZZ, false);
-            //...
-            // For testing, send DONE immediately. Do not use Raise() in entry action.
-            me->Send(new Evt(DONE), me->GetHsmn());
+            me->SendReq(new HeadlightStopReq(), HEADLIGHT, true);
+            me->SendReq(new MotorStopReq(), MOTOR, false);
             return Q_HANDLED();
         }
         case Q_EXIT_SIG: {
@@ -208,8 +208,8 @@ QState Train::Stopping(Train * const me, QEvt const * const e) {
             me->Defer(e);
             return Q_HANDLED();
         }
-        /*
-        case XXX_STOP_CFM: {
+        case HEADLIGHT_STOP_CFM:
+        case MOTOR_STOP_CFM: {
             EVENT(e);
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
             bool allReceived;
@@ -220,7 +220,6 @@ QState Train::Stopping(Train * const me, QEvt const * const e) {
             }
             return Q_HANDLED();
         }
-        */
         case FAILED:
         case STATE_TIMER: {
             EVENT(e);
@@ -240,6 +239,47 @@ QState Train::Started(Train * const me, QEvt const * const e) {
     switch (e->sig) {
         case Q_ENTRY_SIG: {
             EVENT(e);
+            // Tests headlight color setting.
+            uint32_t timeout = HEADLIGHT_SET_TIMEOUT_MS;
+            FW_ASSERT(timeout > HeadlightSetReq::TIMEOUT_MS);
+            // Test only - Disables headlight to avoid conflict with GuiMgr using Adafruit LCD module.
+            me->m_headlightTimer.Start(timeout);
+            me->SendReqMsg(new HeadlightSetReq(0xffffff, 200), HEADLIGHT, MSG_UNDEF, true, me->m_headlightSeq);
+            return Q_HANDLED();
+        }
+        case Q_EXIT_SIG: {
+            EVENT(e);
+            me->m_headlightTimer.Stop();
+            return Q_HANDLED();
+        }
+        case Q_INIT_SIG: {
+            return Q_TRAN(&Train::Normal);
+        }
+        // TestS headlight color setting.
+        case HEADLIGHT_SET_CFM: {
+            EVENT(e);
+            auto const &cfm = static_cast<HeadlightSetCfm const &>(*e);
+            bool allReceived;
+            if (!me->CheckCfmMsg(cfm, allReceived, me->m_headlightSeq)) {
+                me->Raise(new Failed(ERROR_MSG, HEADLIGHT, TRAIN_REASON_HEADLIGHT_SET_FAILED));
+            } else if (allReceived) {
+                me->m_headlightTimer.Stop();
+            }
+            return Q_HANDLED();
+        }
+        case FAILED:
+        case HEADLIGHT_TIMER: {
+            EVENT(e);
+            return Q_TRAN(&Train::Faulted);
+        }
+    }
+    return Q_SUPER(&Train::Root);
+}
+
+QState Train::Normal(Train * const me, QEvt const * const e) {
+    switch (e->sig) {
+        case Q_ENTRY_SIG: {
+            EVENT(e);
             return Q_HANDLED();
         }
         case Q_EXIT_SIG: {
@@ -247,8 +287,25 @@ QState Train::Started(Train * const me, QEvt const * const e) {
             return Q_HANDLED();
         }
     }
-    return Q_SUPER(&Train::Root);
+    return Q_SUPER(&Train::Started);
 }
+
+QState Train::Faulted(Train * const me, QEvt const * const e) {
+    switch (e->sig) {
+        case Q_ENTRY_SIG: {
+            EVENT(e);
+            // @todo Refines fault handling.
+            FW_ASSERT(false);
+            return Q_HANDLED();
+        }
+        case Q_EXIT_SIG: {
+            EVENT(e);
+            return Q_HANDLED();
+        }
+    }
+    return Q_SUPER(&Train::Started);
+}
+
 
 /*
 QState Train::MyState(Train * const me, QEvt const * const e) {

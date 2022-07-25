@@ -13,8 +13,8 @@ tempReg = 'CompositeReg'
 actObj = sys.argv[1]
 region = sys.argv[2]
 
-src = "./src/Template/" + tempAct
-actPath = "./src/" + actObj
+src = "./Src/app/Template/" + tempAct
+actPath = "./Src/app/" + actObj
 
 if os.path.exists(actPath):
     print("Path", actPath, "already exists.")

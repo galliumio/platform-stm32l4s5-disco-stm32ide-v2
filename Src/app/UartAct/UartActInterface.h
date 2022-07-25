@@ -91,7 +91,7 @@ public:
 class UartActStopReq : public Evt {
 public:
     enum {
-        TIMEOUT_MS = 200
+        TIMEOUT_MS = 2200
     };
     UartActStopReq() :
         Evt(UART_ACT_STOP_REQ) {}

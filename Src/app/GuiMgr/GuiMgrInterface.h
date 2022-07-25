@@ -120,6 +120,8 @@ class GuiMgrTickerCfm : public ErrorMsgEvt {
 public:
     GuiMgrTickerCfm(DispTickerCfmMsg const &r) :
         ErrorMsgEvt(GUI_MGR_TICKER_CFM, m_msg), m_msg(r) {}
+    GuiMgrTickerCfm(char const *error, char const *origin = MSG_UNDEF, char const *reason = MSG_REASON_UNSPEC) :
+        GuiMgrTickerCfm(DispTickerCfmMsg(error, origin, reason)) {}
 protected:
     DispTickerCfmMsg m_msg;
 };

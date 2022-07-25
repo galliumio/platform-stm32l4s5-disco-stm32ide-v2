@@ -55,6 +55,7 @@
 #include "SimpleActCmd.h"
 #include "CompositeActCmd.h"
 #include "MotorCmd.h"
+#include "HeadlightCmd.h"
 #include "TestCode.h"
 #include <memory>
 
@@ -335,6 +336,7 @@ static CmdHandler const cmdHandler[] = {
     { "simp",       SimpleActCmd,    "Template/SimpleAct testing", 0 },
     { "comp",       CompositeActCmd, "Template/CompositeAct testing", 0 },
     { "motor",      MotorCmd,   "Motor control", 0 },
+    { "hl",         HeadlightCmd, "Headlight control", 0 },
     { "?",          List,       "List commands", 0 },
 };
 

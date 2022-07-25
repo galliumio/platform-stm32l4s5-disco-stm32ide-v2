@@ -65,6 +65,8 @@ public:
         memset(m_textBuf, 0, sizeof(m_textBuf));
         memset(m_xSizeText, 0, sizeof(m_xSizeText));
         memset(m_pFont, 0, sizeof(m_pFont));
+        // Alignment is set via SetText() so OK to initialize to 0 here.
+        memset(m_align, 0, sizeof(m_align));
         memset(m_textColor, 0, sizeof(m_textColor));
         memset(m_bgColor, 0, sizeof(m_bgColor));              
     }
@@ -87,14 +89,14 @@ public:
     void Show() {
         WM_ShowWindow(m_hWin);        
     }    
-    void SetText(uint32_t bufIdx, const char *pText, const GUI_FONT *pFont, GUI_COLOR textColor, GUI_COLOR bgColor);
+    void SetText(uint32_t bufIdx, const char *pText, const GUI_FONT *pFont, GUI_COLOR textColor, GUI_COLOR bgColor, int align = GUI_TA_TOP|GUI_TA_LEFT);
     void SetBorder(GUI_COLOR borColor) {
         m_borColor = borColor;
         WM_Invalidate(m_hWin);          
     }   
     // dx is amount to shift right (+ve for right, -ve for left)
     void Update(int dx, uint32_t& bufIdx, uint32_t& offsetLeft, uint32_t& offsetRight);
-    void Paint();
+    Area Paint();
 
 private:
     uint32_t GetNextBufIdx() {
@@ -109,6 +111,7 @@ private:
     WM_HWIN         m_hParent;
     uint32_t        m_bufCnt;
     const GUI_FONT *m_pFont[BUF_CNT];
+    int             m_align[BUF_CNT];
     char            m_textBuf[BUF_CNT][MAX_TEXT_LEN];
     uint32_t        m_bufIdx;
     GUI_COLOR       m_textColor[BUF_CNT];

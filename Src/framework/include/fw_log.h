@@ -62,6 +62,7 @@ namespace FW {
 // The following macros can only be used within an HSM. Newline is automatically appended.
 #define EVENT(e_)                Log::Event(Log::TYPE_LOG, me->GetHsmn(), e_, __FUNCTION__);
 #define ERROR_EVENT(e_)          Log::ErrorEvent(Log::TYPE_LOG, me->GetHsmn(), e_, __FUNCTION__);
+// @todo Add LOG_MSG(m_) and LOG_ERROR_MSG(m_) to log messages (migrate from Node.h)
 #define INFO(format_, ...)       Log::Debug(Log::TYPE_INFO, me->GetHsmn(), format_, ## __VA_ARGS__)
 #define LOG(format_, ...)        Log::Debug(Log::TYPE_LOG, me->GetHsmn(), format_, ## __VA_ARGS__)
 #define CRITICAL(format_, ...)   Log::Debug(Log::TYPE_CRITICAL, me->GetHsmn(), format_, ## __VA_ARGS__)

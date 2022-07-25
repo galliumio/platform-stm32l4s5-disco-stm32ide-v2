@@ -76,7 +76,9 @@ namespace APP {
     ADD_HSM(COMPOSITE_ACT, 1) \
     ADD_HSM(COMPOSITE_REG, 4) \
     ADD_HSM(TRAIN, 1) \
-    ADD_HSM(MOTOR, 1)
+    ADD_HSM(HEADLIGHT, 1) \
+    ADD_HSM(MOTOR, 1) \
+    ADD_HSM(WS2812, 1)
 
 #define ALIAS_HSM \
     ADD_ALIAS(CONSOLE_UART1,    CONSOLE) \
@@ -118,7 +120,6 @@ enum
     PRIO_SENSOR         = 31,
     PRIO_UART1_ACT      = 29,
     PRIO_SYSTEM         = 26,
-    PRIO_MOTOR          = 24,
     PRIO_TRAIN          = 23,
     PRIO_ILI9341        = 22,
     PRIO_GUI_MGR        = 21,
@@ -127,6 +128,7 @@ enum
     PRIO_GPIO_IN_ACT    = 16,
     PRIO_DEMO           = 10,
     PRIO_GPIO_OUT_ACT   = 9,
+    PRIO_WS2812         = 8,
     PRIO_AO_WASHING_MACHINE = 7,
     PRIO_TRAFFIC        = 6,
     PRIO_LEVEL_METER    = 5,
