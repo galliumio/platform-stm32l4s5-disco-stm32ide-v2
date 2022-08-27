@@ -61,7 +61,7 @@ namespace APP {
     ADD_HSM(SENSOR_MAG, 1) \
     ADD_HSM(SENSOR_PRESS, 1) \
     ADD_HSM(GPIO_IN_ACT, 1) \
-    ADD_HSM(GPIO_IN, 5) \
+    ADD_HSM(GPIO_IN, 8) \
     ADD_HSM(DEMO, 1) \
     ADD_HSM(GPIO_OUT_ACT, 1) \
     ADD_HSM(GPIO_OUT, 1) \
@@ -93,6 +93,9 @@ namespace APP {
     ADD_ALIAS(MAG_DRDY,        GPIO_IN+2) \
     ADD_ALIAS(HUMID_TEMP_DRDY, GPIO_IN+3) \
     ADD_ALIAS(PRESS_INT,       GPIO_IN+4) \
+    ADD_ALIAS(BTN_A,           GPIO_IN+5) \
+    ADD_ALIAS(BTN_B,           GPIO_IN+6) \
+    ADD_ALIAS(HALL_SENSOR,     GPIO_IN+7) \
     ADD_ALIAS(USER_LED,        GPIO_OUT) \
     ADD_ALIAS(LAMP_NS, LAMP) \
     ADD_ALIAS(LAMP_EW, LAMP+1) \

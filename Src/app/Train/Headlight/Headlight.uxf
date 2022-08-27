@@ -685,7 +685,7 @@ style=wordwrap</panel_attributes>
       <w>154</w>
       <h>55</h>
     </coordinates>
-    <panel_attributes>Starting a timer automatically stops it first.
+    <panel_attributes>Restarting a timer automatically stops it first.
 style=wordwrap</panel_attributes>
     <additional_attributes/>
   </element>

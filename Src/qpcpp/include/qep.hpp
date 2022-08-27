@@ -460,8 +460,8 @@ protected:
 
 private:
     //!< maximum nesting depth of states in HSM
-    // Gallium - Change from 6 to 8.
-    static constexpr std::int_fast8_t MAX_NEST_DEPTH_{8};
+    // Gallium - Change from 6 to 12.
+    static constexpr std::int_fast8_t MAX_NEST_DEPTH_{12};
 
     //! internal helper function to take a transition in QP::QHsm
     std::int_fast8_t hsm_tran(QStateHandler (&path)[MAX_NEST_DEPTH_],

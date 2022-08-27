@@ -353,6 +353,21 @@ void Log::ErrorEvent(Type type, Hsmn hsmn, ErrorEvt const &e, char const *func) 
           e.GetError(), GetHsmName(origin), origin, e.GetReason());
 }
 
+void Log::MsgEvent(Type type, Hsmn hsmn, MsgEvt const &e, char const *func) {
+    // First prints the Evt base object.
+    Event(type, hsmn, &e, func);
+    // Then prints the Msg base object carried by the event.
+    Log::Debug(type, hsmn, "    carrying msg %s to %s from %s len=%d seq=%d",
+               e.GetMsgType(), e.GetMsgTo(), e.GetMsgFrom(), e.GetMsgLen(), e.GetMsgSeq());
+}
+void Log::ErrorMsgEvent(Type type, Hsmn hsmn, ErrorMsgEvt const &e, char const *func) {
+    // First prints the Evt base object.
+    Event(type, hsmn, &e, func);
+    Log::Debug(type, hsmn, "    carrying msg %s to %s from %s len=%d seq=%d error=%s origin=%s reason=%s",
+               e.GetMsgType(), e.GetMsgTo(), e.GetMsgFrom(), e.GetMsgLen(), e.GetMsgSeq(),
+               e.GetMsgError(), e.GetMsgOrigin(), e.GetMsgReason());
+}
+
 void Log::Debug(Type type, Hsmn hsmn, char const *format, ...) {
     Hsm *hsm = Fw::GetHsm(hsmn);
     FW_ASSERT(hsm);

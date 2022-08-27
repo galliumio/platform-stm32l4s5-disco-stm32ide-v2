@@ -71,7 +71,7 @@ valign=top
 --
 entry/ m_hal = Periph::GetHal()
        InitGpio()
-exit/ Disable(), DeInitGpio()
+exit/ DeInitGpio()
 MOTOR_RUN_REQ
 / SendCfm(MOTOR_RUN_CFM(PARAM))
 valign=top
@@ -301,7 +301,7 @@ style=wordwrap</panel_attributes>
 entry/ m_dir = forward, m_setSpeed = 0, 
        m_revSpeed = 0, m_revAccel = 0,
        m_speed = 0, m_step = 0,
-       SetDirection(), SetSpeed()
+       SetSpeed()
 valign=top
 </panel_attributes>
     <additional_attributes/>
@@ -437,7 +437,7 @@ valign=top
     <panel_attributes>MOTOR_RUN_REQ(dir, speed, accel, decel)[dir valid]
 / m_setSpeed = min(speed, MAX_SPEED),
   m_dir = dir, m_step = CalStep(accel),
-  SetDirection(), m_inMsg = req
+  m_inMsg = req
 style=wordwrap</panel_attributes>
     <additional_attributes/>
   </element>
@@ -778,7 +778,7 @@ style=wordwrap</panel_attributes>
 --
 STABLE/ m_setSpeed = m_revSpeed,
         reverse m_dir, m_step = CalStep(m_revAccel),
-        SetDirection(), Raise(SPEED_UP)
+        Raise(SPEED_UP)
 
 valign=top
 </panel_attributes>

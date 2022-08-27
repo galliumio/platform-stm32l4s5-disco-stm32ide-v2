@@ -84,6 +84,8 @@ protected:
         Hsmn hsmn;
         GPIO_TypeDef *port;
         uint16_t pin;
+        uint32_t pull;
+        uint32_t speed;
         bool activeHigh;
     } Config;
     static Config const CONFIG[];

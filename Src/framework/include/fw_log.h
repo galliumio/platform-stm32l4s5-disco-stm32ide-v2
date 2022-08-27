@@ -46,6 +46,7 @@
 #include "fw_bitset.h"
 #include "fw_evtSet.h"
 #include "fw_assert.h"
+#include "fw_msg.h"
 
 #define FW_LOG_ASSERT(t_) ((t_) ? (void)0 : Q_onAssert("fw_log.h", (int_t)__LINE__))
 
@@ -62,7 +63,8 @@ namespace FW {
 // The following macros can only be used within an HSM. Newline is automatically appended.
 #define EVENT(e_)                Log::Event(Log::TYPE_LOG, me->GetHsmn(), e_, __FUNCTION__);
 #define ERROR_EVENT(e_)          Log::ErrorEvent(Log::TYPE_LOG, me->GetHsmn(), e_, __FUNCTION__);
-// @todo Add LOG_MSG(m_) and LOG_ERROR_MSG(m_) to log messages (migrate from Node.h)
+#define MSG_EVENT(e_)            Log::MsgEvent(Log::TYPE_LOG, me->GetHsmn(), e_, __FUNCTION__);
+#define ERROR_MSG_EVENT(e_)      Log::ErrorMsgEvent(Log::TYPE_LOG, me->GetHsmn(), e_, __FUNCTION__);
 #define INFO(format_, ...)       Log::Debug(Log::TYPE_INFO, me->GetHsmn(), format_, ## __VA_ARGS__)
 #define LOG(format_, ...)        Log::Debug(Log::TYPE_LOG, me->GetHsmn(), format_, ## __VA_ARGS__)
 #define CRITICAL(format_, ...)   Log::Debug(Log::TYPE_CRITICAL, me->GetHsmn(), format_, ## __VA_ARGS__)
@@ -130,6 +132,8 @@ public:
     static void FloatToStr(char *buf, uint32_t len, float v, uint32_t totalWidth, uint32_t decimalPlaces);
     static void Event(Type type, Hsmn hsmn, QP::QEvt const *e, char const *func);
     static void ErrorEvent(Type type, Hsmn hsmn, ErrorEvt const &e, char const *func);
+    static void MsgEvent(Type type, Hsmn hsmn, MsgEvt const &e, char const *func);
+    static void ErrorMsgEvent(Type type, Hsmn hsmn, ErrorMsgEvt const &e, char const *func);
     static void Debug(Type type, Hsmn hsmn, char const *format, ...);
     static uint32_t PrintBufLine(Hsmn infHsmn, uint8_t const *lineBuf, uint32_t lineLen, uint8_t unit, uint32_t lineLabel);
     static uint32_t PrintBuf(Hsmn infHsmn, uint8_t const *dataBuf, uint32_t dataLen, uint8_t align = 1, uint32_t label = 0);

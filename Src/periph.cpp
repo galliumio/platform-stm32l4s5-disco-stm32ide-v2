@@ -80,17 +80,13 @@ TIM_HandleTypeDef Periph::m_tim3Hal;
 // Sensor HUMID TEMP DRDY - PD.15
 // Sensor PRESS INT - PD.10
 // LED0 - PB.14 PWM TIM1 Channel 2
-// Button - PC.13
-// Motor (PWM on IN2)
-// Motor IN1 (GPIO) - PB.2
-// Motor IN2 (PWM) - PB.1
-// Motor EN (GPIO) - PA.4 TIM3 Channel 4
-#if 0
-// Motor (PWM on EN)
-// Motor IN1 (GPIO) - PB.2
-// Motor IN2 (PWM) - PA.4
-// Motor EN (GPIO) - PB.1 TIM3 Channel 4
-#endif
+// User Button - PC.13
+// Train Button A (Yellow) - PC.5
+// Train Button B (White) - PC.4
+// Hall-effect Sensor (GPIO) - PC.3
+// Motor (PWM on IN1 and IN2)
+// Motor IN1 (PWM) - PB.4 TIM3 Channel 1
+// Motor IN2 (PWM) - PB.1 TIM3 Channel 4
 // WS2812 (PWM) PA.15 TIM2 Channel 1
 //              DMA2 Channel 5 DMA_REQUEST_TIM2_CH1
 // ESP8266 (UART) TX PA.0
@@ -106,7 +102,7 @@ TIM_HandleTypeDef Periph::m_tim3Hal;
 // APB1CLK = HCLK -> TIM1CLK = HCLK = SystemCoreClock (See "clock tree" and "timer clock" in ref manual.)
 #define TIM3CLK             (SystemCoreClock)   // 120MHz
 #define TIM3_COUNTER_CLK    (20000000)          // 20MHz
-#define TIM3_PWM_FREQ       (1000) //(20000)             // 20kHz
+#define TIM3_PWM_FREQ       (15000)              // 1kHz was (20000)
 
 void Periph::SetupNormal() {
     __GPIOA_CLK_ENABLE();

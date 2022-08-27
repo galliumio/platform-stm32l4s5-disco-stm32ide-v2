@@ -75,18 +75,22 @@ protected:
                     static QState IdleWait(Motor * const me, QEvt const * const e);
 
     // GPIO control functions
+    enum PwmChannel {
+        PWM_IN1,
+        PWM_IN2,
+        PWM_INVALID
+    };
+
     void InitGpio();
     void DeInitGpio();
-    void ConfigPwm(uint32_t levelPermil, bool activeHigh = true);
-    void StartPwm();
-    void StopPwm();
+    void ConfigPwm(PwmChannel ch, uint32_t levelPermil);
+    void StartPwm(PwmChannel ch);
+    void StopPwm(PwmChannel ch);
     // Controls motor direction and speed.
     bool IsValid(MotorDir dir) {
         return dir < MotorDir::INVALID;
     }
-    void SetDirection();
     void SetSpeed();
-    void Disable();
     uint16_t CalStep(uint16_t rate);
 
     enum {
@@ -95,9 +99,11 @@ protected:
     };
 
     enum {
-        MAX_SPEED = 1000,
-        START_SPEED = 100,
-        BREAK_DECEL = 2000,   // Breaking deceleration (PWM level/s). 2000 means full speed to full stop in 0.5s.
+        MAX_SPEED = 1000,       // The max speed a user can set to (Note the absolute max speed is 1000 since it is in permil unit).
+        START_SPEED = 50,
+        PWM_SCALE_PERCENT = 87, // Scale factor to avoid non-linearity at the high end of PWM duty-cycle (through optocoupler).
+                                // For example, a value of 90 means the absolute max speed of 1000 is scaled to a PWM duty-cycle of 90%.
+        BREAK_DECEL = 2000,     // Breaking deceleration (PWM level/s). 2000 means full speed to full stop in 0.5s.
     };
 
     // (IN1, IN2) pins control:
@@ -111,13 +117,15 @@ protected:
         uint16_t in1Pin;
         GPIO_TypeDef *in2Port;
         uint16_t in2Pin;
-        GPIO_TypeDef *enPort;
-        uint16_t enPin;
-        // PWM timer config.
+        // PWM timer config (IN1 and IN2 share the same timer base).
         uint32_t pwmAf;         // GPIO alternate function for timer.
         TIM_TypeDef *pwmTimer;
-        uint32_t pwmChannel;
-        bool pwmComplementary;
+        // IN1 timer channel.
+        uint32_t in1Channel;
+        bool in1Complementary;
+        // IN2 timer channel.
+        uint32_t in2Channel;
+        bool in2Complementary;
     } Config;
     static Config const CONFIG[];
 
@@ -125,7 +133,6 @@ protected:
     TIM_HandleTypeDef *m_hal;
     Pin m_in1Pin;
     Pin m_in2Pin;
-    Pin m_enPin;
     Evt m_inEvt;                    // Static event copy of a generic incoming request event to be confirmed. Add more if needed.
     MsgBaseEvt m_inMsg;             // Static event copy of the base of an incoming request message to be confirmed.
     MotorDir m_dir;

@@ -42,17 +42,6 @@
 #include "MotorInterface.h"
 #include "Motor.h"
 
-// Must enable one of the following.
-//#define PWM_ON_EN
-#define PWM_ON_IN2
-
-#if (defined(PWM_ON_IN2) && defined(PWM_ON_EN))
-#error PWM_ON_IN2 and PWM_ON_EN cannot be both defined
-#endif
-#if (!defined(PWM_ON_IN2) && !defined(PWM_ON_EN))
-#error PWM_ON_IN2 or PWM_ON_EN must be defined
-#endif
-
 FW_DEFINE_THIS_FILE("Motor.cpp")
 
 namespace APP {
@@ -78,42 +67,27 @@ static char const * const interfaceEvtName[] = {
 
 // Define GPIO output pin configurations.
 Motor::Config const Motor::CONFIG[] = {
-#ifdef PWM_ON_EN
-    { MOTOR, GPIOB, GPIO_PIN_2, GPIOA, GPIO_PIN_4, GPIOB, GPIO_PIN_1, GPIO_AF2_TIM3, TIM3, TIM_CHANNEL_4, false },
-#endif
-#ifdef PWM_ON_IN2
-    { MOTOR, GPIOB, GPIO_PIN_2, GPIOB, GPIO_PIN_1, GPIOA, GPIO_PIN_4, GPIO_AF2_TIM3, TIM3, TIM_CHANNEL_4, false },
-#endif
+    { MOTOR, GPIOB, GPIO_PIN_4, GPIOB, GPIO_PIN_1, GPIO_AF2_TIM3, TIM3, TIM_CHANNEL_1, false, TIM_CHANNEL_4, false },
 };
 
 void Motor::InitGpio() {
     // Clock has been initialized by System via Periph.
-    m_in1Pin.Init(m_config->in1Port, m_config->in1Pin, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, 0, GPIO_SPEED_FREQ_MEDIUM);
-#ifdef PWM_ON_EN
-    m_in2Pin.Init(m_config->in2Port, m_config->in2Pin, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, 0, GPIO_SPEED_FREQ_MEDIUM);
-    m_enPin.Init(m_config->enPort, m_config->enPin, GPIO_MODE_AF_PP, GPIO_PULLUP, m_config->pwmAf, GPIO_SPEED_FREQ_MEDIUM);
-#endif
-#ifdef PWM_ON_IN2
+    m_in1Pin.Init(m_config->in1Port, m_config->in1Pin, GPIO_MODE_AF_PP, GPIO_PULLUP, m_config->pwmAf, GPIO_SPEED_FREQ_MEDIUM);
     m_in2Pin.Init(m_config->in2Port, m_config->in2Pin, GPIO_MODE_AF_PP, GPIO_PULLUP, m_config->pwmAf, GPIO_SPEED_FREQ_MEDIUM);
-    m_enPin.Init(m_config->enPort, m_config->enPin, GPIO_MODE_OUTPUT_PP, GPIO_PULLUP, 0, GPIO_SPEED_FREQ_MEDIUM);
-#endif
 }
 
 void Motor::DeInitGpio() {
-    StopPwm();
+    StopPwm(PWM_IN1);
+    StopPwm(PWM_IN2);
     m_in1Pin.DeInit();
     m_in2Pin.DeInit();
-    m_enPin.DeInit();
 }
 
-void Motor::ConfigPwm(uint32_t levelPermil, bool activeHigh) {
+void Motor::ConfigPwm(PwmChannel ch, uint32_t levelPermil) {
     FW_ASSERT(levelPermil <= 1000);
-    FW_ASSERT(m_hal);
-    if (!activeHigh) {
-        levelPermil = 1000 - levelPermil;
-    }
+    FW_ASSERT(m_hal && (ch < PWM_INVALID));
     // Base PWM timer has been initialized by System via Periph.
-    StopPwm();
+    StopPwm(ch);
     TIM_OC_InitTypeDef timConfig;
     memset(&timConfig, 0, sizeof(timConfig));
     timConfig.OCMode       = TIM_OCMODE_PWM1;
@@ -125,79 +99,52 @@ void Motor::ConfigPwm(uint32_t levelPermil, bool activeHigh) {
     timConfig.Pulse        = (m_hal->Init.Period + 1) * levelPermil / 1000;
     QF_CRIT_STAT_TYPE crit;
     QF_CRIT_ENTRY(crit);
-    HAL_StatusTypeDef status = HAL_TIM_PWM_ConfigChannel(m_hal, &timConfig, m_config->pwmChannel);
+    HAL_StatusTypeDef status;
+    if (ch == PWM_IN1) {
+        status = HAL_TIM_PWM_ConfigChannel(m_hal, &timConfig, m_config->in1Channel);
+    } else {
+        status = HAL_TIM_PWM_ConfigChannel(m_hal, &timConfig, m_config->in2Channel);
+    }
     FW_ASSERT(status== HAL_OK);
-    StartPwm();
+    StartPwm(ch);
     QF_CRIT_EXIT(crit);
 }
 
-void Motor::StartPwm() {
-    FW_ASSERT(m_hal);
+void Motor::StartPwm(PwmChannel ch) {
+    FW_ASSERT(m_hal && (ch < PWM_INVALID));
     HAL_StatusTypeDef status;
-    if (m_config->pwmComplementary) {
-        status = HAL_TIMEx_PWMN_Start(m_hal, m_config->pwmChannel);
+    if (ch == PWM_IN1) {
+        status = m_config->in1Complementary ? HAL_TIMEx_PWMN_Start(m_hal, m_config->in1Channel) :
+                                               HAL_TIM_PWM_Start(m_hal, m_config->in1Channel);
     } else {
-        status = HAL_TIM_PWM_Start(m_hal, m_config->pwmChannel);
+        status = m_config->in2Complementary ? HAL_TIMEx_PWMN_Start(m_hal, m_config->in2Channel) :
+                                               HAL_TIM_PWM_Start(m_hal, m_config->in2Channel);
     }
     FW_ASSERT(status == HAL_OK);
 }
 
-
-void Motor::StopPwm() {
-    FW_ASSERT(m_hal);
+void Motor::StopPwm(PwmChannel ch) {
+    FW_ASSERT(m_hal && (ch < PWM_INVALID));
     HAL_StatusTypeDef status;
-    if (m_config->pwmComplementary) {
-        status = HAL_TIMEx_PWMN_Stop(m_hal, m_config->pwmChannel);
+    if (ch == PWM_IN1) {
+        status = m_config->in1Complementary ? HAL_TIMEx_PWMN_Stop(m_hal, m_config->in1Channel) :
+                                               HAL_TIM_PWM_Stop(m_hal, m_config->in1Channel);
     } else {
-        status = HAL_TIM_PWM_Stop(m_hal, m_config->pwmChannel);
+        status = m_config->in2Complementary ? HAL_TIMEx_PWMN_Stop(m_hal, m_config->in2Channel) :
+                                               HAL_TIM_PWM_Stop(m_hal, m_config->in2Channel);
     }
     FW_ASSERT(status == HAL_OK);
-}
-
-void Motor::SetDirection() {
-#ifdef PWM_ON_EN
-    StopPwm();
-    if (m_dir == MotorDir::FORWARD) {
-        m_in1Pin.Clear();
-        m_in2Pin.Set();
-    } else {
-        m_in1Pin.Set();
-        m_in2Pin.Clear();
-    }
-#endif
-#ifdef PWM_ON_IN2
-    m_enPin.Clear();
-    if (m_dir == MotorDir::FORWARD) {
-        m_in1Pin.Clear();
-        ConfigPwm(0, true);
-    } else {
-        m_in1Pin.Set();
-        ConfigPwm(0, false);
-    }
-    m_enPin.Set();
-#endif
 }
 
 void Motor::SetSpeed() {
-#ifdef PWM_ON_EN
-    ConfigPwm(m_speed, true);
-#endif
-#ifdef PWM_ON_IN2
-    ConfigPwm(m_speed, m_dir == MotorDir::FORWARD);
-#endif
-}
-
-void Motor::Disable() {
-#ifdef PWM_ON_EN
-    StopPwm();
-    m_in1Pin.Clear();
-    m_in2Pin.Clear();
-#endif
-#ifdef PWM_ON_IN2
-    m_enPin.Clear();
-    m_in1Pin.Clear();
-    StopPwm();
-#endif
+    FW_ASSERT(IsValid(m_dir));
+    if (m_dir == MotorDir::FORWARD) {
+        ConfigPwm(PWM_IN1, m_speed*PWM_SCALE_PERCENT/100);
+        ConfigPwm(PWM_IN2, 0);
+    } else {
+        ConfigPwm(PWM_IN1, 0);
+        ConfigPwm(PWM_IN2, m_speed*PWM_SCALE_PERCENT/100);
+    }
 }
 
 // @param rate - Rate of change of speed in PWM permil level.
@@ -373,7 +320,6 @@ QState Motor::Started(Motor * const me, QEvt const * const e) {
         }
         case Q_EXIT_SIG: {
             EVENT(e);
-            me->Disable();
             me->DeInitGpio();
             return Q_HANDLED();
         }
@@ -397,9 +343,9 @@ QState Motor::Idle(Motor * const me, QEvt const * const e) {
             me->m_dir = MotorDir::FORWARD;
             me->m_setSpeed = 0;
             me->m_revSpeed = 0;
+            me->m_revAccel = 0;
             me->m_speed = 0;
             me->m_step = 0;
-            me->SetDirection();
             me->SetSpeed();
             return Q_HANDLED();
         }
@@ -410,7 +356,6 @@ QState Motor::Idle(Motor * const me, QEvt const * const e) {
                 me->m_setSpeed = LESS(req.GetSpeed(), (uint32_t)MAX_SPEED);
                 me->m_dir = req.GetDir();
                 me->m_step = me->CalStep(req.GetAccel());
-                me->SetDirection();
                 me->m_inMsg = req;
                 return Q_TRAN(&Motor::Accel);
             }
@@ -523,8 +468,6 @@ QState Motor::Accel(Motor * const me, QEvt const * const e) {
                         me->m_speed += me->m_step;
                     }
                 }
-                me->m_speed += me->m_step,
-                me->m_speed = LESS(me->m_speed, me->m_setSpeed);
                 LOG("level(%c) = %d (target = %d)", me->m_dir == MotorDir::FORWARD ? 'f' : 'b',
                     me->m_speed, me->m_setSpeed);
                 me->SetSpeed();
@@ -604,7 +547,6 @@ QState Motor::Reversing(Motor * const me, QEvt const * const e) {
             me->m_setSpeed = me->m_revSpeed;
             me->m_dir = (me->m_dir == MotorDir::FORWARD) ? MotorDir::BACKWARD : MotorDir::FORWARD;
             me->m_step = me->CalStep(me->m_revAccel);
-            me->SetDirection();
             me->Raise(new Evt(SPEED_UP));
             return Q_HANDLED();
         }

@@ -71,7 +71,9 @@ static char const * const hsmName[] = {
     "MAG_DRDY",
     "HUMID_TEMP_DRDY",
     "PRESS_INT",
-    "WIFI_DRDY",
+    "BTN_A",
+    "BTN_B",
+    "HALL_SENSOR"
     // Add more regions here.
 };
 
@@ -121,11 +123,14 @@ Hsmn GpioIn::GetHsmn(uint16_t pin) {
 }
 
 GpioIn::Config const GpioIn::CONFIG[] = {
-    { USER_BTN,        GPIOC, GPIO_PIN_13, false },
-    { ACCEL_GYRO_INT,  GPIOD, GPIO_PIN_11, true },
-    { MAG_DRDY,        GPIOC, GPIO_PIN_8,  true },
-    { HUMID_TEMP_DRDY, GPIOD, GPIO_PIN_15, true },
-    { PRESS_INT,       GPIOD, GPIO_PIN_10, true },
+    { USER_BTN,        GPIOC, GPIO_PIN_13, GPIO_NOPULL,   GPIO_SPEED_FREQ_LOW,  false },
+    { ACCEL_GYRO_INT,  GPIOD, GPIO_PIN_11, GPIO_NOPULL,   GPIO_SPEED_FREQ_HIGH, true },
+    { MAG_DRDY,        GPIOC, GPIO_PIN_8,  GPIO_NOPULL,   GPIO_SPEED_FREQ_HIGH, true },
+    { HUMID_TEMP_DRDY, GPIOD, GPIO_PIN_15, GPIO_NOPULL,   GPIO_SPEED_FREQ_HIGH, true },
+    { PRESS_INT,       GPIOD, GPIO_PIN_10, GPIO_NOPULL,   GPIO_SPEED_FREQ_HIGH, true },
+    { BTN_A,           GPIOC, GPIO_PIN_5,  GPIO_PULLDOWN, GPIO_SPEED_FREQ_LOW,  true },
+    { BTN_B,           GPIOC, GPIO_PIN_4,  GPIO_PULLDOWN, GPIO_SPEED_FREQ_LOW,  true },
+    { HALL_SENSOR,     GPIOC, GPIO_PIN_3,  GPIO_PULLUP,   GPIO_SPEED_FREQ_HIGH, true },
 };
 
 void GpioIn::InitGpio() {
@@ -144,8 +149,8 @@ void GpioIn::InitGpio() {
     GPIO_InitTypeDef gpioInit;
     gpioInit.Pin = m_config->pin;
     gpioInit.Mode = GPIO_MODE_IT_RISING_FALLING;
-    gpioInit.Pull = GPIO_NOPULL;
-    gpioInit.Speed = GPIO_SPEED_FREQ_HIGH;
+    gpioInit.Pull = m_config->pull;
+    gpioInit.Speed = m_config->speed;
     HAL_GPIO_Init(m_config->port, &gpioInit);
 
     IRQn_Type irq;
