@@ -52,13 +52,23 @@ namespace APP {
 
 class GpioIn : public Region {
 public:
-    using Region::GetHsmn;
+    class Config {
+    public:
+        Hsmn hsmn;
+        GPIO_TypeDef *port;
+        uint16_t pin;
+        uint32_t pull;
+        uint32_t speed;
+        bool activeHigh;
+        bool tracking;     // True if the HSM tracks the pin state. Interrupt handling is deferred with interrupt disabled.
+                           // False if an active interrupt sends a GPIO_IN_ACTIVE_IND event directly.
+    };
 
-    typedef KeyValue<Hsmn, uint16_t> HsmnPin;
-    typedef Map<Hsmn, uint16_t> HsmnPinMap;
-    static HsmnPinMap &GetHsmnPinMap();
-    static void SavePin(Hsmn hsmn, uint16_t pin);
-    static Hsmn GetHsmn(uint16_t pin);
+    // Typedef an array to allow fast lookup of a Config object from the GPIO pin number [0-15].
+    typedef Config const *PinConfigMap[16];
+    static PinConfigMap &GetPinConfigMap();
+    static void SaveConfig(uint16_t pin, Config const *config);
+    static Config const *GetConfig(uint16_t pin);
     static void GpioIntCallback(uint16_t pin);
 
     GpioIn();
@@ -68,11 +78,13 @@ protected:
     static QState Root(GpioIn * const me, QEvt const * const e);
         static QState Stopped(GpioIn * const me, QEvt const * const e);
         static QState Started(GpioIn * const me, QEvt const * const e);
-            static QState Inactive(GpioIn * const me, QEvt const * const e);
-            static QState Active(GpioIn * const me, QEvt const * const e);
-                static QState PulseWait(GpioIn * const me, QEvt const * const e);
-                static QState HoldWait(GpioIn * const me, QEvt const * const e);
-                static QState Held(GpioIn * const me, QEvt const * const e);
+            static QState TriggerMode(GpioIn * const me, QEvt const * const e);
+            static QState TrackMode(GpioIn * const me, QEvt const * const e);
+                static QState Inactive(GpioIn * const me, QEvt const * const e);
+                static QState Active(GpioIn * const me, QEvt const * const e);
+                    static QState PulseWait(GpioIn * const me, QEvt const * const e);
+                    static QState HoldWait(GpioIn * const me, QEvt const * const e);
+                    static QState Held(GpioIn * const me, QEvt const * const e);
 
     void InitGpio();
     void DeInitGpio();
@@ -80,19 +92,13 @@ protected:
     static void DisableGpioInt(uint16_t pin);
     bool IsActive();
 
-    typedef struct {
-        Hsmn hsmn;
-        GPIO_TypeDef *port;
-        uint16_t pin;
-        uint32_t pull;
-        uint32_t speed;
-        bool activeHigh;
-    } Config;
     static Config const CONFIG[];
 
     Config const *m_config;
     Hsmn m_client;
-    bool m_debouncing;      // True to enable debouncing.
+    bool m_filterGlitch;      // True to filter glitches.
+                              // False to artificially generate active/inactive indications upon detected glitch (assuming single glitch).
+    uint32_t m_holdCount;
 
     enum {
         PULSE_TIMEOUT_MS = 50,
@@ -112,7 +118,8 @@ protected:
     ADD_EVT(DONE) \
     ADD_EVT(TRIGGER) \
     ADD_EVT(PIN_INACTIVE) \
-    ADD_EVT(PIN_ACTIVE)
+    ADD_EVT(PIN_ACTIVE) \
+    ADD_EVT(SELF)
 
 #undef ADD_EVT
 #define ADD_EVT(e_) e_,

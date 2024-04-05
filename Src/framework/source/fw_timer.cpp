@@ -116,5 +116,21 @@ void Timer::Stop() {
     QF_CRIT_EXIT(crit);
 }
 
+uint32_t Timer::GetTimeoutMs(uint32_t wakeTimeMs) {
+    // It relies on unsigned 32-bit subtraction to automatically handle wrap-around cases.
+    // It uses the sign of a signed integer (mid-point of a 32-bit range) to determine if
+    // the wake-up time is leading or trailing the current time.
+    // Example:
+    // 0x00000003 - 0xFFFFFFF0 = 19 (wrap-around case)
+    // 0xA0000000 - 0xA000F000 = 0xFFFF1000 = -61440 (trailing case)
+    // 0x70000000 - 0x6FFFF000 = 0x00001000 = 4096 (leading case)
+    int32_t timeout = static_cast<int32_t>(wakeTimeMs - GetSystemMs());
+    if (timeout <= 0) {
+        // Returns the minimum allowed timeout if the wake-up time trails or is equal to 
+        // the current time. (Timeout of 0 is not allowed.)
+        return 1;
+    }
+    return static_cast<uint32_t>(timeout);
+}
 
 } // namespace FW

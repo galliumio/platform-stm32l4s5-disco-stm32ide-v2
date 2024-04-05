@@ -301,8 +301,8 @@ QState LedFrame::Busy(LedFrame * const me, QEvt const * const e) {
             for (uint32_t ypos = y; ypos < y + h; ypos++) {
                 for (uint32_t xpos = x; xpos < x + w; xpos++) {
                     uint32_t idx = (ypos * XSIZE_PHYS + xpos)*2;
-                    me->m_dmaBuf[dmaLen++] = me->m_frameBuf[idx + 1];
                     me->m_dmaBuf[dmaLen++] = me->m_frameBuf[idx];
+                    me->m_dmaBuf[dmaLen++] = me->m_frameBuf[idx+1];
                 }
             }
             FW_ASSERT(dmaLen);

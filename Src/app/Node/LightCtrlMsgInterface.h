@@ -36,8 +36,8 @@
  * Email - admin@galliumstudio.com
  ******************************************************************************/
 
-#ifndef HEADLIGHT_MSG_INTERFACE_H
-#define HEADLIGHT_MSG_INTERFACE_H
+#ifndef LIGHT_CTRL_MSG_INTERFACE_H
+#define LIGHT_CTRL_MSG_INTERFACE_H
 
 #include "fw_def.h"
 #include "fw_msg.h"
@@ -46,70 +46,55 @@
 using namespace QP;
 using namespace FW;
 
-#define MSG_HEADLIGHT_REASON_INVALID_PATTERN    "Invalid headlight pattern"
-
 namespace APP {
 
-// This file defines messages for the "Headlight" role.
+// This file defines messages for the "LightCtrl (Light Control)" role.
+// LightCtrl is responsible for the overall lighting control of a device, which may involve a group of
+// individual lights (each managed by a related "Light" role).
 
-class HeadlightSetReqMsg final: public Msg {
+#define LIGHT_CTRL_MSG_REASON_INVALID_CMD   "INVALID_CMD"       // Invalid light control command.
+
+// Light control operations.
+enum class LightCtrlOp: uint8_t {
+    ALL_OFF,    // All lights off.
+    ALL_FADE,   // All lights fades out until off.
+    // Headlight (front and rear) commands.
+    HEADLIGHT_REST_FORWARD,     // Motor stopped and ready to run in forward direction.
+    HEADLIGHT_REST_BACKWARD,    // Motor stopped and ready to run in backward direction.
+    HEADLIGHT_RUNNING_FORWARD,  // Motor running in 'forward' direction.
+    HEADLIGHT_RUNNING_BACKWARD, // Motor running in 'backward' direction.
+    HEADLIGHT_ALERT,            // Headlight showing red-blue flashing pattern.
+    HEADLIGHT_WARNING,          // Headlight showing amber-white flashing pattern.
+    // @todo Add cabin light operations.
+    INVALID
+};
+
+// A request to send a command to LightCtrl.
+class LightCtrlOpReqMsg final: public Msg {
 public:
-    HeadlightSetReqMsg(uint32_t color = 0, uint32_t rampMs = 1) :
-        Msg("HeadlightSetReqMsg"), m_color(color), m_rampMs(rampMs) {
+    LightCtrlOpReqMsg(LightCtrlOp op) :
+        Msg("LightCtrlOpReqMsg"), m_op(static_cast<uint8_t>(op)) {
         m_len = sizeof(*this);
     }
-    uint32_t GetColor() const { return m_color; }
-    uint32_t GetRampMs() const { return m_rampMs; }
+    LightCtrlOp GetOp() const {
+        if (m_op < static_cast<uint8_t>(LightCtrlOp::INVALID)) {
+            return static_cast<LightCtrlOp>(m_op);
+        }
+        return LightCtrlOp::INVALID;
+    }
 private:
-    uint32_t m_color;       // Set color (888 xBGR).
-    uint32_t m_rampMs;      // Ramp time from current color to set color in ms.
+    uint8_t m_op;
 } __attribute__((packed));
 
-class HeadlightSetCfmMsg final : public ErrorMsg {
+class LightCtrlOpCfmMsg final : public ErrorMsg {
 public:
-    HeadlightSetCfmMsg(char const *error = MSG_ERROR_SUCCESS, char const *origin = MSG_UNDEF, char const *reason = MSG_REASON_UNSPEC) :
-        ErrorMsg("HeadlightSetCfmMsg", error, origin, reason) {
+    LightCtrlOpCfmMsg(char const *error = MSG_ERROR_SUCCESS, char const *origin = MSG_UNDEF, char const *reason = MSG_REASON_UNSPEC) :
+        ErrorMsg("LightCtrlOpCfmMsg", error, origin, reason) {
         m_len = sizeof(*this);
     }
 } __attribute__((packed));
 
-class HeadlightPatternReqMsg final: public Msg {
-public:
-    HeadlightPatternReqMsg(uint32_t patternIndex = 0, bool isRepeat = false) :
-        Msg("HeadlightPatternReqMsg"), m_patternIndex(patternIndex), m_isRepeat(isRepeat) {
-        m_len = sizeof(*this);
-    }
-    uint32_t GetPatternIndex() const { return m_patternIndex; }
-    bool IsRepeat() const { return m_isRepeat; }
-private:
-    uint32_t m_patternIndex;
-    bool m_isRepeat;
-} __attribute__((packed));
-
-class HeadlightPatternCfmMsg final : public ErrorMsg {
-public:
-    HeadlightPatternCfmMsg(char const *error = MSG_ERROR_SUCCESS, char const *origin = MSG_UNDEF, char const *reason = MSG_REASON_UNSPEC) :
-        ErrorMsg("HeadlightPatternCfmMsg", error, origin, reason) {
-        m_len = sizeof(*this);
-    }
-} __attribute__((packed));
-
-class HeadlightOffReqMsg final: public Msg {
-public:
-    HeadlightOffReqMsg() :
-        Msg("HeadlightOffReqMsg") {
-        m_len = sizeof(*this);
-    }
-} __attribute__((packed));
-
-class HeadlightOffCfmMsg final : public ErrorMsg {
-public:
-    HeadlightOffCfmMsg(char const *error = MSG_ERROR_SUCCESS, char const *origin = MSG_UNDEF, char const *reason = MSG_REASON_UNSPEC) :
-        ErrorMsg("HeadlightOffCfmMsg", error, origin, reason) {
-        m_len = sizeof(*this);
-    }
-} __attribute__((packed));
 
 } // namespace APP
 
-#endif // HEADLIGHT_MSG_INTERFACE_H
+#endif // LIGHT_CTRL_MSG_INTERFACE_H

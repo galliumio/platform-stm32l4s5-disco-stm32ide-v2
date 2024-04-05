@@ -72,6 +72,10 @@
 #error ENABLE_TRAIN and ENABLE_LEVEL_METER cannot be both defined
 #endif
 
+#if (defined(ENABLE_TRAIN) && defined(ENABLE_TRAFFIC))
+#error ENABLE_TRAIN and ENABLE_TRAFFIC cannot be both defined
+#endif
+
 FW_DEFINE_THIS_FILE("System.cpp")
 
 #define SRV_DOMAIN      "192.168.1.81"  	// "192.168.1.114"		//"192.168.1.233"

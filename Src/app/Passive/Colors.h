@@ -42,6 +42,7 @@
 #include <stdint.h>
 #include "fw_macro.h"
 #include "fw_assert.h"
+#include "Gamma.h"
 
 #define COLORS_ASSERT(t_) ((t_) ? (void)0 : Q_onAssert("Colors.h", (int)__LINE__))
 
@@ -53,9 +54,12 @@ public:
     Color888Bgr(uint32_t color) : m_color(color) {}
     void Set(uint32_t color) { m_color = color; }
     void Set(uint8_t red, uint8_t green, uint8_t blue) {
-        m_color = BYTE_TO_LONG(0, blue, green, red);
+        m_color = ByteToColor(red, green, blue);
     }
     uint32_t Get() const { return m_color; }
+    uint32_t Gamma() const {
+        return ByteToColor(Gamma::conv(Red()), Gamma::conv(Green()), Gamma::conv(Blue()));
+    }
     uint8_t Red() const { return BYTE_0(m_color); }
     uint8_t Green() const { return BYTE_1(m_color); }
     uint8_t Blue() const { return BYTE_2(m_color); }
@@ -64,6 +68,9 @@ public:
     }
     bool operator!=(Color888Bgr const &c) {
         return m_color != c.Get();
+    }
+    static uint32_t ByteToColor(uint8_t red, uint8_t green, uint8_t blue) {
+        return BYTE_TO_LONG(0, blue, green, red);
     }
 private:
     uint32_t m_color;   // (888 xBGR).

@@ -39,6 +39,7 @@
 #include "app_hsmn.h"
 #include "fw_log.h"
 #include "fw_assert.h"
+#include "TestPins.h"
 #include "Colors.h"
 #include "Ws2812Interface.h"
 #include "Ws2812.h"
@@ -155,7 +156,8 @@ Ws2812::Config const Ws2812::CONFIG[] = {
 
 
 void Ws2812::InitGpio() {
-    m_pin.Init(m_config->gpioPort, m_config->gpioPin, GPIO_MODE_AF_PP, GPIO_PULLUP, m_config->gpioAf);
+    // Enables pull-down to ensure pin stays low when DMA is inactive. Otherwise data pin was at > 1V between DMA transfers.
+    m_pin.Init(m_config->gpioPort, m_config->gpioPin, GPIO_MODE_AF_PP, GPIO_PULLDOWN, m_config->gpioAf);
 }
 
 void Ws2812::DeInitGpio() {

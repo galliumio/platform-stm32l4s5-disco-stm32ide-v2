@@ -36,15 +36,15 @@
  * Email - admin@galliumstudio.com
  ******************************************************************************/
 
-#ifndef HEADLIGHT_CMD_H
-#define HEADLIGHT_CMD_H
+#ifndef LIGHT_CMD_H
+#define LIGHT_CMD_H
 
 #include "ConsoleInterface.h"
 
 namespace APP {
 
-CmdStatus HeadlightCmd(Console &console, Evt const *e);
+CmdStatus LightCmd(Console &console, Evt const *e);
 
 } // namespace APP
 
-#endif // HEADLIGHT_CMD_H
+#endif // LIGHT_CMD_H

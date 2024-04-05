@@ -36,8 +36,8 @@
  * Email - admin@galliumstudio.com
  ******************************************************************************/
 
-#ifndef HEADLIGHT_H
-#define HEADLIGHT_H
+#ifndef LIGHT_H
+#define LIGHT_H
 
 #include "qpcpp.h"
 #include "fw_region.h"
@@ -45,45 +45,49 @@
 #include "fw_evt.h"
 #include "app_hsmn.h"
 #include "Colors.h"
-#include "HeadlightPattern.h"
+#include "LightPattern.h"
+#include "Ws2812Interface.h"
 
 using namespace QP;
 using namespace FW;
 
 namespace APP {
 
-class Headlight : public Region {
+class Light : public Region {
 public:
-    Headlight();
+    Light(Hsmn hsmn, char const *name, uint32_t ledIdx, uint32_t ledCnt, uint32_t ledInc);
 
 protected:
-    static QState InitialPseudoState(Headlight * const me, QEvt const * const e);
-    static QState Root(Headlight * const me, QEvt const * const e);
-        static QState Stopped(Headlight * const me, QEvt const * const e);
-        static QState Starting(Headlight * const me, QEvt const * const e);
-        static QState Stopping(Headlight * const me, QEvt const * const e);
-        static QState Started(Headlight * const me, QEvt const * const e);
-            static QState Off(Headlight * const me, QEvt const * const e);
-            static QState On(Headlight * const me, QEvt const * const e);
-                static QState Ramping(Headlight * const me, QEvt const * const e);
-                static QState Stable(Headlight * const me, QEvt const * const e);
-                static QState Aborted(Headlight * const me, QEvt const * const e);
-            static QState Pattern(Headlight * const me, QEvt const * const e);
-                static QState Repeating(Headlight * const me, QEvt const * const e);
-                static QState Once(Headlight * const me, QEvt const * const e);
-            static QState Faulted(Headlight * const me, QEvt const * const e);
+    static QState InitialPseudoState(Light * const me, QEvt const * const e);
+    static QState Root(Light * const me, QEvt const * const e);
+        static QState Stopped(Light * const me, QEvt const * const e);
+        static QState Stopping(Light * const me, QEvt const * const e);
+        static QState Started(Light * const me, QEvt const * const e);
+            static QState Off(Light * const me, QEvt const * const e);
+            static QState On(Light * const me, QEvt const * const e);
+                static QState Ramping(Light * const me, QEvt const * const e);
+                static QState Stable(Light * const me, QEvt const * const e);
+            static QState Pattern(Light * const me, QEvt const * const e);
+                static QState Repeating(Light * const me, QEvt const * const e);
+                static QState Once(Light * const me, QEvt const * const e);
+            static QState Faulted(Light * const me, QEvt const * const e);
 
     void CalRampSteps();
     void UpdateRampColor();
+    void FillColors(Color888Bgr const &color);
 
-    Evt m_inEvt;                // Static event copy of a generic incoming req to be confirmed. Added more if needed.
-    MsgBaseEvt m_inMsg;         // Static event copy of the base of an incoming request message to be confirmed.
+    uint32_t m_ledIdx;          // Starting 0-based index of the LED(s) driven by this HSM on the WS2812 LED strip.
+    uint32_t m_ledCnt;          // Number of LEDs driven by this HSM (must > 0).
+    uint32_t m_ledInc;          // Increments in index between adjacent LEDs. It is "don't care" if count = 1.
+    Hsmn m_manager;             // Managing HSM.
+    Hsmn m_ws2812Hsmn;          // HSM interfacing to the WS2812 LED strip.
     Timer m_stateTimer;
     Timer m_ws2812Timer;
     Timer m_intervalTimer;
     EvtSeqRec m_ws2812Seq;      // Keeps track of sequence numbers of outgoing events to WS2812.
-    Color888Bgr m_color;        // Current color (888 xBGR).
-    Color888Bgr m_savedColor;
+    Ws2812SetReq::LedColor m_colors[Ws2812SetReq::MAX_LED_COUNT];   // Color info passed to WS2812.
+    Color888Bgr m_currColor;    // Current color (888 xBGR).
+    Color888Bgr m_startColor;   // Starting (original) color when ramping up (to avoid rounding errors).
     Color888Bgr m_setColor;     // Set color (888 xBGR).
     uint32_t m_setRampMs;       // Ramp up time from current color to set color in ms.
     uint32_t m_rampIdx;         // 0-based index to current ramp interval.
@@ -91,13 +95,15 @@ protected:
     float m_stepRed;            // Step change of red color in each interval.
     float m_stepGreen;          // Step change of green color in each interval.
     float m_stepBlue;           // Step change of blue color in each interval.
-    HeadlightPatternSet const &m_patternSet;   // Set of supported patterns.
-    HeadlightPattern const *m_currPattern;
+    LightPatternSet const &m_patternSet;   // Set of supported patterns.
+    LightPattern const *m_currPattern;
     uint32_t m_intervalIndex;
     bool m_isRepeat;
+    uint32_t m_nextTimeMs;      // System time in ms to start the next interval.
+    Evt m_inEvt;                // Static event copy of a generic incoming req to be confirmed. Added more if needed.
 
     enum {
-        HEADLIGHT_COUNT = 4     // 0 and 3 are used. 1 and 2 are placeholders.
+        LIGHT_COUNT = 4     // 0 and 3 are used. 1 and 2 are placeholders.
     };
 
     enum {
@@ -105,15 +111,15 @@ protected:
         INTERVAL_TIMEOUT_MS = 50,       // Fixed interval timeout in On state.
     };
 
-#define HEADLIGHT_TIMER_EVT \
+#define LIGHT_TIMER_EVT \
     ADD_EVT(STATE_TIMER) \
     ADD_EVT(WS2812_TIMER) \
     ADD_EVT(INTERVAL_TIMER)
 
-#define HEADLIGHT_INTERNAL_EVT \
+#define LIGHT_INTERNAL_EVT \
     ADD_EVT(DONE) \
+    ADD_EVT(CONTINUE) \
     ADD_EVT(FAILED) \
-    ADD_EVT(ABORT) \
     ADD_EVT(NEXT_INTERVAL) \
     ADD_EVT(LAST_INTERVAL)
 
@@ -121,13 +127,13 @@ protected:
 #define ADD_EVT(e_) e_,
 
     enum {
-        HEADLIGHT_TIMER_EVT_START = TIMER_EVT_START(HEADLIGHT),
-        HEADLIGHT_TIMER_EVT
+        LIGHT_TIMER_EVT_START = TIMER_EVT_START(LIGHT),
+        LIGHT_TIMER_EVT
     };
 
     enum {
-        HEADLIGHT_INTERNAL_EVT_START = INTERNAL_EVT_START(HEADLIGHT),
-        HEADLIGHT_INTERNAL_EVT
+        LIGHT_INTERNAL_EVT_START = INTERNAL_EVT_START(LIGHT),
+        LIGHT_INTERNAL_EVT
     };
 
     class Failed : public ErrorEvt {
@@ -139,4 +145,4 @@ protected:
 
 } // namespace APP
 
-#endif // HEADLIGHT_H
+#endif // LIGHT_H

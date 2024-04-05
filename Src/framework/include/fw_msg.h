@@ -56,6 +56,7 @@ namespace FW {
 #define MSG_UNDEF           "UNDEF"         // Undefined value for message fields.
 
 #define MSG_ERROR_SUCCESS   "SUCCESS"       // No error, success.
+#define MSG_ERROR_PENDING   "PENDING"       // Result pending.
 #define MSG_ERROR_UNSPEC    "UNSPEC"        // Unspecified.
 #define MSG_ERROR_ABORTED   "ABORTED"       // Aborted before completion.
 #define MSG_ERROR_TIMEOUT   "TIMEOUT"       // Timeout.
@@ -69,6 +70,10 @@ namespace FW {
 #define MSG_ERROR_AUTH      "AUTH"          // Authentication error.
 
 #define MSG_REASON_UNSPEC   "UNSPEC"        // Unspecified reason.
+
+// Helper functions to translation between event and message errors.
+char const * ToMsgError(Error evtError);
+Error ToEvtError(char const *msgError);
 
 // Messages are for external communication (e.g. between Node and Srv).
 class Msg {
@@ -130,6 +135,12 @@ public:
     char const *GetReason() const {return m_reason; }
     bool IsSuccess() const {
         return STRBUF_EQUAL(m_error, MSG_ERROR_SUCCESS);
+    }
+    bool IsPending() const {
+        return STRBUF_EQUAL(m_error, MSG_ERROR_PENDING);
+    }
+    bool IsError() const {
+        return !(IsSuccess() || IsPending());
     }
     enum {
         ERROR_LEN = 16,

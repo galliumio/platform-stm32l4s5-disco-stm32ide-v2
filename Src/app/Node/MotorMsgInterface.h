@@ -50,7 +50,7 @@ namespace APP {
 
 // This file defines messages for the "Motor" role.
 
-enum MotorDir : uint8_t {
+enum class MotorDir : uint8_t {
     FORWARD,
     BACKWARD,
     INVALID,
@@ -59,11 +59,11 @@ enum MotorDir : uint8_t {
 class MotorRunReqMsg final: public Msg {
 public:
     MotorRunReqMsg(MotorDir dir = MotorDir::INVALID, uint16_t speed = 0, uint16_t accel = 0, uint16_t decel = 0) :
-        Msg("MotorRunReqMsg"), m_speed(speed), m_accel(accel), m_decel(decel),  m_dir(dir) {
+        Msg("MotorRunReqMsg"), m_speed(speed), m_accel(accel), m_decel(decel),  m_dir(static_cast<uint8_t>(dir)) {
         m_len = sizeof(*this);
     }
     MotorDir GetDir() const {
-        if (m_dir < MotorDir::INVALID) {
+        if (m_dir < static_cast<uint8_t>(MotorDir::INVALID)) {
             return static_cast<MotorDir>(m_dir);
         }
         return MotorDir::INVALID;

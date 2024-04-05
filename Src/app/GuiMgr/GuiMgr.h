@@ -74,35 +74,32 @@ protected:
         static QState Stopping(GuiMgr * const me, QEvt const * const e);
         static QState Started(GuiMgr * const me, QEvt const * const e);
             static QState TrainSign(GuiMgr *me, QEvt const *e);
-            static QState ColorTest(GuiMgr *me, QEvt const *e);
-            static QState Signage(GuiMgr *me, QEvt const *e);
-            static QState Ticker(GuiMgr *me, QEvt const *e);
-                static QState TickerNormal(GuiMgr *me, QEvt const *e);
-                static QState TickerAlert(GuiMgr *me, QEvt const *e);
-            static QState Bmp(GuiMgr *me, QEvt const *e);
-                static QState BmpNormal(GuiMgr *me, QEvt const *e);
-                static QState BmpAlert(GuiMgr *me, QEvt const *e);
 
     enum {
         MAX_WINDOW_CNT = 32,
     };
 
-    class TimeoutMap {
+    class Scroll {
     public:
-        uint32_t offset;
-        uint32_t timeoutMs;
+        // Must not have constructor or brace-enclosed initializer does not work (e.g. m_text1ScrollMap in GuiMgr.cpp).
+        uint32_t m_timeoutMs;   // Milliseconds to wait before shifting by the "delta" amount.
+        int32_t m_delta;        // Number of pixels to shift at the expiration of "timeoutMs".
+                                // Must NOT be zero or the bitmap/text box will be stuck forever.
+                                // Negative for left scroll.
+    };
+
+    class ScrollMap {
+    public:
+        uint32_t m_offset;
+        Scroll m_scroll;
     };
     // Dynamic timeout for speed control.
-    static const TimeoutMap m_ticker1Timeout[];
-    static const TimeoutMap m_ticker2Timeout[];
-    static const TimeoutMap m_ticker3Timeout[];
-    static const TimeoutMap m_ticker4Timeout[];
-    static const TimeoutMap m_text1Timeout[];
-    static const TimeoutMap m_bmpTimeout[];
+    static const ScrollMap m_text1ScrollMap[];
+    static const ScrollMap m_bmpScrollMap[];
 
-    // Helper function to map offset to timeout for speed control.
-    static uint32_t GetTimeout(TimeoutMap const *map, uint32_t mapLen, uint32_t offsetLeft, uint32_t offsetRight);
-    static uint32_t GetTimeout(TimeoutMap const *map, uint32_t mapLen, uint32_t offset);
+    // Helper function to map offset to scroll object for speed control.
+    static Scroll GetScroll(ScrollMap const *map, uint32_t mapLen, uint32_t offsetLeft, uint32_t offsetRight);
+    static Scroll GetScroll(ScrollMap const *map, uint32_t mapLen, uint32_t offset);
 
     // Helper function to manage dirty areas.
     void SetDirty(Area const &area);
@@ -133,10 +130,10 @@ protected:
     GuiTicker m_ticker1;
     GuiTicker m_ticker2;
     GuiTicker m_ticker3;
-    GuiTicker m_ticker4;
-    GuiTicker m_ticker5;
     GuiText   m_text1;
     GuiBmp    m_bmp;
+    Scroll    m_text1Scroll;
+    Scroll    m_bmpScroll;
 
     uint32_t  m_ticker1CycleCnt;
     uint32_t  m_bmpCycleCnt;
@@ -144,7 +141,7 @@ protected:
     Evt m_inEvt;                    // Static event copy of a generic incoming req to be confirmed. Added more if needed.
 
     enum {
-        SYNC_TIMEOUT_MS = 50,       // 100
+        SYNC_TIMEOUT_MS = 50,
         BG_WND_TIMEOUT_MS = 40,
         COLOR_TEST_TIMEOUT_MS = 1000, // 5000,
     };
@@ -155,10 +152,6 @@ protected:
 
     // Timer with tick rate = 1 (LED_PANEL_SYNC_IND event)
     Timer m_bgWndTimer;
-    Timer m_ticker1Timer;
-    Timer m_ticker2Timer;
-    Timer m_ticker3Timer;
-    Timer m_ticker4Timer;
     Timer m_text1Timer;
     Timer m_bmpTimer;
     Timer m_updateTimer;        // Generic use for all UI states.
@@ -167,10 +160,6 @@ protected:
     ADD_EVT(STATE_TIMER) \
     ADD_EVT(SYNC_TIMER) \
     ADD_EVT(BG_WND_TIMER) \
-    ADD_EVT(TICKER1_TIMER) \
-    ADD_EVT(TICKER2_TIMER) \
-    ADD_EVT(TICKER3_TIMER) \
-    ADD_EVT(TICKER4_TIMER) \
     ADD_EVT(TEXT1_TIMER) \
     ADD_EVT(BMP_TIMER) \
     ADD_EVT(UPDATE_TIMER)
@@ -182,8 +171,6 @@ protected:
     ADD_EVT(PAINT_TICKER1) \
     ADD_EVT(PAINT_TICKER2) \
     ADD_EVT(PAINT_TICKER3) \
-    ADD_EVT(PAINT_TICKER4) \
-    ADD_EVT(PAINT_TICKER5) \
     ADD_EVT(PAINT_TEXT1) \
     ADD_EVT(PAINT_BMP)
 

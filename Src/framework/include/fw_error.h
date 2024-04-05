@@ -44,8 +44,8 @@ namespace FW {
 // Common error code for all HSM's.
 enum Error {
     ERROR_SUCCESS,      // No error, success.
+    ERROR_PENDING,      // Result pending.
     ERROR_UNSPEC,       // Unspecified error.
-    ERROR_MSG,          // An error originated from an error message (ErrorMsg).
     ERROR_ABORTED,      // Aborted before completion.
     ERROR_TIMEOUT,      // Timeout.
     ERROR_HAL,          // HAL driver error.

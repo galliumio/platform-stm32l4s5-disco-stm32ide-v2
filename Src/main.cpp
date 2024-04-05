@@ -96,12 +96,14 @@
 #include "Traffic.h"
 #include "LevelMeter.h"
 #include "Train.h"
+#include "LightCtrl.h"
 #include "Ws2812.h"
 #include "UartAct.h"
 #include "GuiMgr.h"
 #include "SystemInterface.h"
 #include "ConsoleInterface.h"
 #include "ConsoleCmd.h"
+#include "TestPins.h"
 
 FW_DEFINE_THIS_FILE("main.cpp")
 
@@ -136,6 +138,7 @@ static GuiMgr guiMgr;
 static WifiThread wifiThread;
 static Node node;
 static Train train;
+static LightCtrl lightCtrl;
 static Ws2812 ws2812(WS2812, "WS2812");
 
 /* Private function prototypes -----------------------------------------------*/
@@ -155,9 +158,15 @@ int main(void)
 
     // Initialize QP, framework and BSP (including HAL).
     Fw::Init();
+    // @todo Add GPIO initialization to TestPins creation.
+    // Normally SetupNormal() is called in System HSM. It is added here for test pins to work during initialziation.
+    Periph::SetupNormal();
+
     // Configure log settings.
     Log::SetVerbosity(4);
-    Log::OnAll();
+    //Log::OnAll();
+    Log::OffAll();
+
     Log::Off(UART1_IN);
     Log::Off(UART1_OUT);
     Log::Off(CMD_INPUT_UART1);
@@ -172,7 +181,14 @@ int main(void)
     Log::Off(LEVEL_METER);
     Log::Off(WIFI);
     Log::Off(NODE_PARSER);
+    Log::Off(NODE);
     Log::Off(MOTOR);
+    Log::Off(WS2812);
+    Log::Off(LIGHT_CTRL);
+    Log::Off(FRONT_LIGHT_0);
+    Log::Off(FRONT_LIGHT_1);
+    Log::Off(REAR_LIGHT_0);
+    Log::Off(REAR_LIGHT_1);
 
     // Start active objects.
     compositeAct.Start(PRIO_COMPOSITE_ACT);
@@ -191,6 +207,7 @@ int main(void)
     wifiThread.Start(PRIO_WIFI);
     node.Start(PRIO_NODE);
     train.Start(PRIO_TRAIN);
+    lightCtrl.Start(PRIO_LIGHT_CTRL);
     ws2812.Start(PRIO_WS2812);
     sys.Start(PRIO_SYSTEM);
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<diagram program="umlet" version="14.3.0">
+<diagram program="umlet" version="15.0.0">
   <help_text>// Uncomment the following line to change the fontsize and font:
 fontsize=11
 fontfamily=Monospaced //possible: SansSerif,Serif,Monospaced
@@ -175,7 +175,7 @@ style=wordwrap</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>299</x>
+      <x>975</x>
       <y>221</y>
       <w>130</w>
       <h>78</h>
@@ -186,7 +186,7 @@ style=wordwrap</panel_attributes>
   <element>
     <id>UMLSpecialState</id>
     <coordinates>
-      <x>299</x>
+      <x>975</x>
       <y>221</y>
       <w>26</w>
       <h>26</h>
@@ -250,6 +250,54 @@ style=wordwrap</panel_attributes>
       <h>26</h>
     </coordinates>
     <panel_attributes>type=initial</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>572</x>
+      <y>325</y>
+      <w>351</w>
+      <h>39</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;&gt;&gt;</panel_attributes>
+    <additional_attributes>10.0;10.0;250.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>572</x>
+      <y>403</y>
+      <w>351</w>
+      <h>39</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;&gt;&gt;</panel_attributes>
+    <additional_attributes>250.0;10.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Text</id>
+    <coordinates>
+      <x>663</x>
+      <y>299</y>
+      <w>143</w>
+      <h>39</h>
+    </coordinates>
+    <panel_attributes>AUTO_MODE
+style=wordwrap
+fg=RED</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Text</id>
+    <coordinates>
+      <x>663</x>
+      <y>377</y>
+      <w>143</w>
+      <h>39</h>
+    </coordinates>
+    <panel_attributes>MANUAL_MODE
+style=wordwrap
+fg=RED</panel_attributes>
     <additional_attributes/>
   </element>
 </diagram>

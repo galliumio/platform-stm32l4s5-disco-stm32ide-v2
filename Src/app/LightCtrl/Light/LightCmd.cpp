@@ -40,20 +40,30 @@
 #include "fw_log.h"
 #include "fw_assert.h"
 #include "Console.h"
-#include "HeadlightCmd.h"
-#include "HeadlightInterface.h"
+#include "LightCmd.h"
+#include "LightInterface.h"
 
-FW_DEFINE_THIS_FILE("HeadlightCmd.cpp")
+FW_DEFINE_THIS_FILE("LightCmd.cpp")
 
 namespace APP {
 
 static CmdStatus Start(Console &console, Evt const *e) {
     switch (e->sig) {
         case Console::CONSOLE_CMD: {
-            console.SendReq(new HeadlightStartReq(), HEADLIGHT, true, console.GetEvtSeq());
-            break;
+            auto const &cmd = static_cast<Console::ConsoleCmd const &>(*e);
+            if (cmd.Argc() >= 2) {
+                uint32_t instance = STRING_TO_NUM(cmd.Argv(1), 0);
+                if (instance >= LIGHT_COUNT) {
+                    console.Print("Invalid instance %d", instance);
+                    return CMD_DONE;
+                }
+                console.SendReq(new LightStartReq(WS2812), LIGHT + instance, true, console.GetEvtSeq());
+                break;
+            }
+            console.Print("light start <instance>\n\r");
+            return CMD_DONE;
         }
-        case HEADLIGHT_START_CFM: {
+        case LIGHT_START_CFM: {
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
             console.PrintErrorEvt(cfm);
             bool allReceived;
@@ -74,10 +84,20 @@ static CmdStatus Start(Console &console, Evt const *e) {
 static CmdStatus Stop(Console &console, Evt const *e) {
     switch (e->sig) {
         case Console::CONSOLE_CMD: {
-            console.SendReq(new HeadlightStopReq(), HEADLIGHT, true, console.GetEvtSeq());
-            break;
+            auto const &cmd = static_cast<Console::ConsoleCmd const &>(*e);
+            if (cmd.Argc() >= 2) {
+                uint32_t instance = STRING_TO_NUM(cmd.Argv(1), 0);
+                if (instance >= LIGHT_COUNT) {
+                    console.Print("Invalid instance %d", instance);
+                    return CMD_DONE;
+                }
+                console.SendReq(new LightStopReq, LIGHT + instance, true, console.GetEvtSeq());
+                break;
+            }
+            console.Print("light stop <instance>\n\r");
+            return CMD_DONE;
         }
-        case HEADLIGHT_STOP_CFM: {
+        case LIGHT_STOP_CFM: {
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
             console.PrintErrorEvt(cfm);
             bool allReceived;
@@ -98,25 +118,30 @@ static CmdStatus Stop(Console &console, Evt const *e) {
 static CmdStatus Set(Console &console, Evt const *e) {
     switch (e->sig) {
         case Console::CONSOLE_CMD: {
-            auto const &ind = static_cast<Console::ConsoleCmd const &>(*e);
-            if (ind.Argc() >= 2) {
-                uint32_t color = STRING_TO_NUM(ind.Argv(1), 16);
-                uint32_t rampMs = 1000;
-                if (ind.Argc() >=3) {
-                    rampMs = STRING_TO_NUM(ind.Argv(2), 0);
+            auto const &cmd = static_cast<Console::ConsoleCmd const &>(*e);
+            if (cmd.Argc() >= 3) {
+                uint32_t instance = STRING_TO_NUM(cmd.Argv(1), 0);
+                if (instance >= LIGHT_COUNT) {
+                    console.Print("Invalid instance %d", instance);
+                    return CMD_DONE;
                 }
-                console.Print("color = 0x%x, rampMs = %d\n\r", color, rampMs);
-                console.SendReqMsg(new HeadlightSetReq(color, rampMs), HEADLIGHT, MSG_UNDEF, true, console.GetMsgSeq());
+                uint32_t color = STRING_TO_NUM(cmd.Argv(2), 16);
+                uint32_t rampMs = 1000;
+                if (cmd.Argc() >=4) {
+                    rampMs = STRING_TO_NUM(cmd.Argv(3), 0);
+                }
+                console.Print("instance = %d, color = 0x%x, rampMs = %d\n\r", instance, color, rampMs);
+                console.SendReq(new LightSetReq(color, rampMs), LIGHT + instance, true, console.GetEvtSeq());
                 break;
             }
-            console.Print("hl set <hex color (888 xBGR)> <ramp/ms>\n\r");
+            console.Print("light set <instance> <hex color (888 xBGR)> <ramp/ms>\n\r");
             return CMD_DONE;
         }
-        case HEADLIGHT_SET_CFM: {
-            auto const &cfm = static_cast<HeadlightSetCfm const &>(*e);
-            console.PrintErrorMsg(cfm);
+        case LIGHT_SET_CFM: {
+            auto const &cfm = static_cast<LightSetCfm const &>(*e);
+            console.PrintErrorEvt(cfm);
             bool allReceived;
-            if (!console.CheckCfmMsg(cfm, allReceived, console.GetMsgSeq())) {
+            if (!console.CheckCfm(cfm, allReceived, console.GetEvtSeq())) {
                 console.Print("Done with error\n\r");
                 return CMD_DONE;
             } else if (allReceived) {
@@ -132,25 +157,34 @@ static CmdStatus Set(Console &console, Evt const *e) {
 static CmdStatus Pattern(Console &console, Evt const *e) {
     switch (e->sig) {
         case Console::CONSOLE_CMD: {
-            auto const &ind = static_cast<Console::ConsoleCmd const &>(*e);
-            if (ind.Argc() >= 2) {
-                uint32_t pattern = STRING_TO_NUM(ind.Argv(1), 0);
+            auto const &cmd = static_cast<Console::ConsoleCmd const &>(*e);
+            if (cmd.Argc() >= 3) {
+                uint32_t instance = STRING_TO_NUM(cmd.Argv(1), 0);
+                if (instance >= LIGHT_COUNT) {
+                    console.Print("Invalid instance %d", instance);
+                    return CMD_DONE;
+                }
+                uint32_t patternIdx = STRING_TO_NUM(cmd.Argv(2), 0);
+                if (patternIdx >= static_cast<uint32_t>(LightPatternIdx::INVALID)) {
+                    console.Print("Invalid patternIdx %d", patternIdx);
+                    return CMD_DONE;
+                }
                 bool repeat = true;
-                if (ind.Argc() >= 3 && STRING_EQUAL(ind.Argv(2), "0")) {
+                if (cmd.Argc() >= 4 && STRING_EQUAL(cmd.Argv(3), "0")) {
                     repeat = false;
                 }
-                console.Print("pattern = %d, repeat = %d\n\r", pattern, repeat);
-                console.SendReqMsg(new HeadlightPatternReq(pattern, repeat), HEADLIGHT, MSG_UNDEF, true, console.GetMsgSeq());
+                console.Print("instance = %d, patternIdx = %d, repeat = %d\n\r", instance, patternIdx, repeat);
+                console.SendReq(new LightPatternReq(static_cast<LightPatternIdx>(patternIdx), repeat), LIGHT + instance, true, console.GetEvtSeq());
                 break;
             }
-            console.Print("hl pattern <pattern idx> [0=once,*other=repeat]\n\r");
+            console.Print("light pattern <instance> <pattern idx> [0=once,*other=repeat]\n\r");
             return CMD_DONE;
         }
-        case HEADLIGHT_PATTERN_CFM: {
-            auto const &cfm = static_cast<HeadlightPatternCfm const &>(*e);
-            console.PrintErrorMsg(cfm);
+        case LIGHT_PATTERN_CFM: {
+            auto const &cfm = static_cast<LightPatternCfm const &>(*e);
+            console.PrintErrorEvt(cfm);
             bool allReceived;
-            if (!console.CheckCfmMsg(cfm, allReceived, console.GetMsgSeq())) {
+            if (!console.CheckCfm(cfm, allReceived, console.GetEvtSeq())) {
                 console.Print("Done with error\n\r");
                 return CMD_DONE;
             } else if (allReceived) {
@@ -166,17 +200,17 @@ static CmdStatus Pattern(Console &console, Evt const *e) {
 static CmdStatus List(Console &console, Evt const *e);
 static CmdHandler const cmdHandler[] = {
     { "?",          List,       "List commands", 0 },
-    { "start",      Start,      "Start the Headlight HSM", 0 },
-    { "stop",       Stop,       "Stop the Headlight HSM", 0 },
-    { "set",        Set,        "Set headlight color", 0 },
-    { "pattern",    Pattern,    "Set headlight pattern", 0 },
+    { "start",      Start,      "Start a Light HSM", 0 },
+    { "stop",       Stop,       "Stop a Light HSM", 0 },
+    { "set",        Set,        "Set light color", 0 },
+    { "pattern",    Pattern,    "Set light pattern", 0 },
 };
 
 static CmdStatus List(Console &console, Evt const *e) {
     return console.ListCmd(e, cmdHandler, ARRAY_COUNT(cmdHandler));
 }
 
-CmdStatus HeadlightCmd(Console &console, Evt const *e) {
+CmdStatus LightCmd(Console &console, Evt const *e) {
     return console.HandleCmd(e, cmdHandler, ARRAY_COUNT(cmdHandler));
 }
 

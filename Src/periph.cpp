@@ -62,7 +62,7 @@ TIM_HandleTypeDef Periph::m_tim3Hal;
 //                  Reset - PD.14 (Not connected)
 //                  TX DMA2 Channel 4 DMA_REQUEST_SPI1_TX
 //                  RX DMA2 Channel 3 DMA_REQUEST_SPI1_RX)
-// External Ili9341 SPI1 - SCK PA.5, MISO PA.6, MOSI PA.7, CS PA.2 D/CX PA.3
+// External Ili9341 SPI1 - SCK PA.5, MISO PA.6, MOSI PA.7, CS PB.8 D/CX PA.3
 //                  Reset - PD.14
 // 2nd External Ili9341 - Shares all pins with first LCD except CS on PB.9
 //                  TX DMA2 Channel 4 DMA_REQUEST_SPI1_TX
@@ -89,20 +89,20 @@ TIM_HandleTypeDef Periph::m_tim3Hal;
 // Motor IN2 (PWM) - PB.1 TIM3 Channel 4
 // WS2812 (PWM) PA.15 TIM2 Channel 1
 //              DMA2 Channel 5 DMA_REQUEST_TIM2_CH1
-// ESP8266 (UART) TX PA.0
-//                RX PA.1
+// Future ESP8266 (UART) TX PA.0 (Test Pin)
+//                       RX PA.1 (Test Pin)
 //
 // TIM1 configuration:
 // APB1CLK = HCLK -> TIM1CLK = HCLK = SystemCoreClock (See "clock tree" and "timer clock" in ref manual.)
 #define TIM1CLK             (SystemCoreClock)   // 120MHz
 #define TIM1_COUNTER_CLK    (20000000)          // 20MHz
-#define TIM1_PWM_FREQ       (20000)             // 20kHz
+#define TIM1_PWM_FREQ       (500)               // 500Hz, was 20kHz (20000)
 
 // TIM3 configuration:
 // APB1CLK = HCLK -> TIM1CLK = HCLK = SystemCoreClock (See "clock tree" and "timer clock" in ref manual.)
 #define TIM3CLK             (SystemCoreClock)   // 120MHz
 #define TIM3_COUNTER_CLK    (20000000)          // 20MHz
-#define TIM3_PWM_FREQ       (15000)              // 1kHz was (20000)
+#define TIM3_PWM_FREQ       (15000)             // 15kHz
 
 void Periph::SetupNormal() {
     __GPIOA_CLK_ENABLE();

@@ -80,10 +80,14 @@ public:
     // Using built-in event sequence record.
     void SendReq(Evt *e, Hsmn to, bool reset) { m_hsm.SendReq(e, to, reset); }
     void SendInd(Evt *e, Hsmn to, bool reset) { m_hsm.SendInd(e, to, reset); }
-    bool CheckCfm(ErrorEvt const &e, bool &allReceived, EvtSeqRec &seqRec) { return m_hsm.CheckCfm(e, allReceived, seqRec); }
-    bool CheckRsp(ErrorEvt const &e, bool &allReceived, EvtSeqRec &seqRec) { return m_hsm.CheckRsp(e, allReceived, seqRec); }
-    bool CheckCfm(ErrorEvt const &e, bool &allReceived) { return m_hsm.CheckCfm(e, allReceived); }
-    bool CheckRsp(ErrorEvt const &e, bool &allReceived) { return m_hsm.CheckRsp(e, allReceived); }
+    bool CheckCfm(ErrorEvt const &e, bool &allReceived, EvtSeqRec &seqRec, bool *pending = nullptr) {
+        return m_hsm.CheckCfm(e, allReceived, seqRec, pending);
+    }
+    bool CheckRsp(ErrorEvt const &e, bool &allReceived, EvtSeqRec &seqRec, bool *pending = nullptr) {
+        return m_hsm.CheckRsp(e, allReceived, seqRec, pending);
+    }
+    bool CheckCfm(ErrorEvt const &e, bool &allReceived, bool *pending = nullptr) { return m_hsm.CheckCfm(e, allReceived, pending); }
+    bool CheckRsp(ErrorEvt const &e, bool &allReceived, bool *pending = nullptr) { return m_hsm.CheckRsp(e, allReceived, pending); }
 
     void SendCfm(Evt *e, Evt const &req) { m_hsm.SendCfm(e, req); }
     void SendCfm(Evt *e, Evt &savedReq) { m_hsm.SendCfm(e, savedReq); }
@@ -100,11 +104,11 @@ public:
     void SendCfmMsg(MsgEvt *e, MsgEvt &savedReq) { m_hsm.SendCfmMsg(e, savedReq); }
     void SendRspMsg(MsgEvt *e, MsgEvt const &req) { m_hsm.SendRspMsg(e, req); }
     void SendRspMsg(MsgEvt *e, MsgEvt &savedReq) { m_hsm.SendRspMsg(e, savedReq); }
-    bool CheckCfmMsg(ErrorMsgEvt const &e, bool &allReceived, MsgSeqRec &seqRec) {
-        return m_hsm.CheckCfmMsg(e, allReceived, seqRec);
+    bool CheckCfmMsg(ErrorMsgEvt const &e, bool &allReceived, MsgSeqRec &seqRec, bool *pending = nullptr) {
+        return m_hsm.CheckCfmMsg(e, allReceived, seqRec, pending);
     }
-    bool CheckRspMsg(ErrorMsgEvt const &e, bool &allReceived, MsgSeqRec &seqRec) {
-        return m_hsm.CheckRspMsg(e, allReceived, seqRec);
+    bool CheckRspMsg(ErrorMsgEvt const &e, bool &allReceived, MsgSeqRec &seqRec, bool *pending = nullptr) {
+        return m_hsm.CheckRspMsg(e, allReceived, seqRec, pending);
     }
 
 protected:

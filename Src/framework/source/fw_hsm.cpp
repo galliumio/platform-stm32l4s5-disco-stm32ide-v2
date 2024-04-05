@@ -80,21 +80,31 @@ void Hsm::SendReq(Evt *e, Hsmn to, bool reset, EvtSeqRec &seqRec) {
 
 // @description Standard handling of a confirmation or response event.
 // @param[in] e - Event to handle.
-// @param[out] allReceived -  Set to true if all expected cfm/rsp (success or failure with matched sequence) have been
-//                            received (i.e. seqRec empty), including the case when seqRec is already empty at start.
-// @return Handling status - true if (1) the event matches sequence and reports success,
+// @param[out] allReceived - Set to true if all expected cfm/rsp (success or failure with matched sequence) have been
+//                           received (i.e. seqRec empty), including the case when seqRec is already empty at start.
+//                           Note a pending cfm/rsp does NOT affect its received status.
+// @param[out] pending     - Optional, set to true if a pending cfm/rsp is received; otherwise set to false.
+// @return Handling status - true if (1) the event matches sequence and reports success or pending (non-error),
 //                           (2) the event is ignored due to sequence mismatch,
 //                           (3) seqRec is already empty at start.
 //                           false if the event matches sequence and reports an error.
-bool Hsm::CheckCfm(ErrorEvt const &e, bool &allReceived, EvtSeqRec &seqRec) {
+bool Hsm::CheckCfm(ErrorEvt const &e, bool &allReceived, EvtSeqRec &seqRec, bool *pending) {
+    if (pending) {
+        *pending = false;
+    }
     allReceived = seqRec.IsAllCleared();
     // If allReceived is true, seqRec.Match() below must return false and this function returns true.
     if (seqRec.Match(e.GetFrom(), e.GetSeq())) {
-        // Matched sequence in seqRec is auto-cleared.
-        allReceived = seqRec.IsAllCleared();
-        if (e.GetError() != ERROR_SUCCESS) {
-            return false;
+        // Matched entry is NOT auto-cleared. Pending cfm/rsp does not affect received status.
+        if (!e.IsPending()) {
+            seqRec.Clear(e.GetFrom());
+        } else {
+            if (pending) {
+                *pending = true;
+            }
         }
+        allReceived = seqRec.IsAllCleared();
+        return !e.IsError();
     }
     return true;
 }
@@ -128,21 +138,31 @@ void Hsm::SendCfmMsg(MsgEvt *e, MsgEvt &savedReq) {
 
 // @description Standard handling of a confirmation or response message.
 // @param[in] e - Message event to handle.
-// @param[out] allReceived -  Set to true if all expected cfm/rsp (success or failure with matched sequence) have been
-//                            received (i.e. seqRec empty), including the case when seqRec is already empty at start.
-// @return Handling status - true if (1) the message matches sequence and reports success,
+// @param[out] allReceived - Set to true if all expected cfm/rsp (success or failure with matched sequence) have been
+//                           received (i.e. seqRec empty), including the case when seqRec is already empty at start.
+//                           Note a pending cfm/rsp does NOT affect its received status.
+// @param[out] pending     - Optional, set to true if a pending cfm/rsp is received; otherwise set to false.
+// @return Handling status - true if (1) the message matches sequence and reports success or pending (non-error),
 //                           (2) the message is ignored due to sequence mismatch,
 //                           (3) seqRec is already empty at start.
 //                           false if the message matches sequence and reports an error.
-bool Hsm::CheckCfmMsg(ErrorMsgEvt const &e, bool &allReceived, MsgSeqRec &seqRec) {
+bool Hsm::CheckCfmMsg(ErrorMsgEvt const &e, bool &allReceived, MsgSeqRec &seqRec, bool *pending) {
+    if (pending) {
+        *pending = false;
+    }
     allReceived = seqRec.IsAllCleared();
     // If allReceived is true, seqRec.Match() below must return false and this function returns true.
     if (seqRec.Match(e.GetMsgFrom(), e.GetMsgSeq())) {
-        // Matched sequence in seqRec is auto-cleared.
-        allReceived = seqRec.IsAllCleared();
-        if (!e.GetErrorMsg().IsSuccess()) {
-            return false;
+        // Matched entry is NOT auto-cleared. Pending cfm/rsp does not affect received status.
+        if (!e.GetErrorMsg().IsPending()) {
+            seqRec.Clear(e.GetMsgFrom());
+        } else {
+            if (pending) {
+                *pending = true;
+            }
         }
+        allReceived = seqRec.IsAllCleared();
+        return !e.GetErrorMsg().IsError();
     }
     return true;
 }

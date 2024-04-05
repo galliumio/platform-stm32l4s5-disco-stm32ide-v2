@@ -65,8 +65,8 @@ protected:
         EVT_SIZE_LARGE = 256,
         EVT_SIZE_XLARGE = 2048,
         EVT_COUNT_SMALL = 32,
-        EVT_COUNT_MEDIUM = 8,
-        EVT_COUNT_LARGE = 8,
+        EVT_COUNT_MEDIUM = 16, //8,
+        EVT_COUNT_LARGE = 16, //8,
         EVT_COUNT_XLARGE = 2
     };
 

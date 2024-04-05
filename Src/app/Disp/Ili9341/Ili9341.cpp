@@ -84,7 +84,7 @@ Ili9341::Config const Ili9341::CONFIG[] = {
 Ili9341::Config const Ili9341::CONFIG[] = {
     { ILI9341, 240, 320, SPI1, SPI1_IRQn, SPI1_PRIO,                                // SPI IRQ
       GPIOA, GPIO_PIN_5, GPIOA, GPIO_PIN_6, GPIOA, GPIO_PIN_7, GPIO_AF5_SPI1,       // SPI pins (SCK, MISO, MOSI)
-      GPIOA, GPIO_PIN_2, GPIOB, GPIO_PIN_9, GPIOA, GPIO_PIN_3, GPIOD, GPIO_PIN_14,  // CS0, CS1, D/CX and Reset
+      GPIOB, GPIO_PIN_8, GPIOB, GPIO_PIN_9, GPIOA, GPIO_PIN_3, GPIOD, GPIO_PIN_14,  // CS0, CS1, D/CX and Reset
       DMA2_Channel4, DMA_REQUEST_SPI1_TX, DMA2_Channel4_IRQn, DMA2_CHANNEL4_PRIO,   // TX DMA
       DMA2_Channel3, DMA_REQUEST_SPI1_RX, DMA2_Channel3_IRQn, DMA2_CHANNEL3_PRIO,   // RX DMA
     },
@@ -110,7 +110,7 @@ void Ili9341::InitSpi() {
     // SPI SCK pin config.
     GPIO_InitStruct.Mode      = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull      = GPIO_PULLUP;
-    GPIO_InitStruct.Speed     = GPIO_SPEED_LOW;
+    GPIO_InitStruct.Speed     = GPIO_SPEED_MEDIUM; //GPIO_SPEED_LOW;
     GPIO_InitStruct.Alternate = m_config->spiAf;
     GPIO_InitStruct.Pin       = m_config->sckPin;
     HAL_GPIO_Init(m_config->sckPort, &GPIO_InitStruct);
@@ -199,7 +199,7 @@ void Ili9341::DeInitSpi() {
 
 bool Ili9341::InitHal() {
     m_hal.Instance               = m_config->spi;
-    m_hal.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+    m_hal.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
     m_hal.Init.Direction         = SPI_DIRECTION_2LINES;
     m_hal.Init.CLKPhase          = SPI_PHASE_1EDGE;
     m_hal.Init.CLKPolarity       = SPI_POLARITY_LOW;
@@ -504,7 +504,19 @@ void Ili9341::WriteBitmap(int16_t x, int16_t y, uint16_t w, uint16_t h, uint8_t 
     }
 
     SetAddrWindow(x, y, w, h);
+    
+    // @todo Investigate if it is necessary to switch modes and if there is a more efficient way to do that.
+    // Swtiches to 16-bit mode for efficient writes.
+    DeInitHal();
+    m_hal.Init.DataSize = SPI_DATASIZE_16BIT;
+    HAL_SPI_Init(&m_hal);
+
     WriteDataBuf(buf, len);
+
+    // Restores 8-bit mode.
+    DeInitHal();
+    m_hal.Init.DataSize = SPI_DATASIZE_8BIT;
+    HAL_SPI_Init(&m_hal);
 }
 
 Ili9341::Ili9341(XThread &container) :

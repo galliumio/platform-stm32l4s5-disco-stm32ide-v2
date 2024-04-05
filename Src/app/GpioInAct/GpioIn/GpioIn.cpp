@@ -39,6 +39,7 @@
 #include "app_hsmn.h"
 #include "fw_log.h"
 #include "fw_assert.h"
+#include "TestPins.h"
 #include "GpioInInterface.h"
 #include "GpioIn.h"
 
@@ -101,37 +102,43 @@ static uint16_t GetInst(Hsmn hsmn) {
     return inst;
 }
 
-
-GpioIn::HsmnPinMap &GpioIn::GetHsmnPinMap() {
-    static HsmnPin hsmnPinStor[GPIO_IN_COUNT];
-    static HsmnPinMap hsmnPinMap(hsmnPinStor, ARRAY_COUNT(hsmnPinStor), HsmnPin(HSM_UNDEF, 0));
-    return hsmnPinMap;
-}
-
-// No need to have critical section since mapping is not changed after global/static object construction.
-void GpioIn::SavePin(Hsmn hsmn, uint16_t pin) {
-    GetHsmnPinMap().Save(HsmnPin(hsmn, pin));
-}
-
-// No need to have critical section since mapping is not changed after global/static object construction.
-Hsmn GpioIn::GetHsmn(uint16_t pin) {
-    HsmnPin *kv = GetHsmnPinMap().GetFirstByValue(pin);
-    FW_ASSERT(kv);
-    Hsmn hsmn = kv->GetKey();
-    FW_ASSERT(hsmn != HSM_UNDEF);
-    return hsmn;
-}
-
 GpioIn::Config const GpioIn::CONFIG[] = {
-    { USER_BTN,        GPIOC, GPIO_PIN_13, GPIO_NOPULL,   GPIO_SPEED_FREQ_LOW,  false },
-    { ACCEL_GYRO_INT,  GPIOD, GPIO_PIN_11, GPIO_NOPULL,   GPIO_SPEED_FREQ_HIGH, true },
-    { MAG_DRDY,        GPIOC, GPIO_PIN_8,  GPIO_NOPULL,   GPIO_SPEED_FREQ_HIGH, true },
-    { HUMID_TEMP_DRDY, GPIOD, GPIO_PIN_15, GPIO_NOPULL,   GPIO_SPEED_FREQ_HIGH, true },
-    { PRESS_INT,       GPIOD, GPIO_PIN_10, GPIO_NOPULL,   GPIO_SPEED_FREQ_HIGH, true },
-    { BTN_A,           GPIOC, GPIO_PIN_5,  GPIO_PULLDOWN, GPIO_SPEED_FREQ_LOW,  true },
-    { BTN_B,           GPIOC, GPIO_PIN_4,  GPIO_PULLDOWN, GPIO_SPEED_FREQ_LOW,  true },
-    { HALL_SENSOR,     GPIOC, GPIO_PIN_3,  GPIO_PULLUP,   GPIO_SPEED_FREQ_HIGH, true },
+    { USER_BTN,        GPIOC, GPIO_PIN_13, GPIO_NOPULL,   GPIO_SPEED_FREQ_LOW,  false, true },
+    { ACCEL_GYRO_INT,  GPIOD, GPIO_PIN_11, GPIO_NOPULL,   GPIO_SPEED_FREQ_HIGH, true, true },
+    { MAG_DRDY,        GPIOC, GPIO_PIN_8,  GPIO_NOPULL,   GPIO_SPEED_FREQ_HIGH, true, true },
+    { HUMID_TEMP_DRDY, GPIOD, GPIO_PIN_15, GPIO_NOPULL,   GPIO_SPEED_FREQ_HIGH, true, true },
+    { PRESS_INT,       GPIOD, GPIO_PIN_10, GPIO_NOPULL,   GPIO_SPEED_FREQ_HIGH, true, true },
+    { BTN_A,           GPIOC, GPIO_PIN_5,  GPIO_PULLDOWN, GPIO_SPEED_FREQ_LOW,  true, true },
+    { BTN_B,           GPIOC, GPIO_PIN_4,  GPIO_PULLDOWN, GPIO_SPEED_FREQ_LOW,  true, true },
+    { HALL_SENSOR,     GPIOC, GPIO_PIN_3,  GPIO_NOPULL,   GPIO_SPEED_FREQ_LOW, false, true },
 };
+
+GpioIn::PinConfigMap &GpioIn::GetPinConfigMap() {
+    static PinConfigMap map;
+    // map is guaranteed to be zero-initialized which corresponds to null pointers.
+    return map;
+}
+
+// pin is a bitmask representing the pin (GPIO_PIN_0 to GPIO_PIN_15).
+void GpioIn::SaveConfig(uint16_t pin, Config const *config) {
+    auto &map = GetPinConfigMap();
+    FW_ASSERT(!config || (config->pin == pin));
+    FW_ASSERT(pin);
+    // QF_LOG2 is 1-based, so subtract 1 to get 0-based index.
+    uint8_t idx = QF_LOG2(pin) - 1;
+    FW_ASSERT(idx < ARRAY_COUNT(map));
+    map[idx] = config;
+}
+
+// Returns NULL if pin is unused.
+GpioIn::Config const *GpioIn::GetConfig(uint16_t pin) {
+    auto &map = GetPinConfigMap();
+    FW_ASSERT(pin);
+    // QF_LOG2 is 1-based, so subtract 1 to get 0-based index.
+    uint8_t idx = QF_LOG2(pin) - 1;
+    FW_ASSERT(idx < ARRAY_COUNT(map));
+    return map[idx];
+}
 
 void GpioIn::InitGpio() {
     FW_ASSERT(m_config->port);
@@ -148,7 +155,11 @@ void GpioIn::InitGpio() {
     }
     GPIO_InitTypeDef gpioInit;
     gpioInit.Pin = m_config->pin;
-    gpioInit.Mode = GPIO_MODE_IT_RISING_FALLING;
+    if (m_config->tracking) {
+        gpioInit.Mode = GPIO_MODE_IT_RISING_FALLING;
+    } else {
+        gpioInit.Mode = (m_config->activeHigh ? GPIO_MODE_IT_RISING : GPIO_MODE_IT_FALLING);
+    }
     gpioInit.Pull = m_config->pull;
     gpioInit.Speed = m_config->speed;
     HAL_GPIO_Init(m_config->port, &gpioInit);
@@ -194,10 +205,13 @@ void GpioIn::DisableGpioInt(uint16_t pin) {
 
 void GpioIn::GpioIntCallback(uint16_t pin) {
     static Sequence counter = 0;
-    Hsmn hsmn = GpioIn::GetHsmn(pin);
-    Evt *evt = new Evt(GpioIn::TRIGGER, hsmn, HSM_UNDEF, counter++);
+    GpioIn::Config const *config = GpioIn::GetConfig(pin);
+    FW_ASSERT(config);
+    Evt *evt = new Evt(GpioIn::TRIGGER, config->hsmn, HSM_UNDEF, counter++);
     Fw::Post(evt);
-    DisableGpioInt(pin);
+    if (config->tracking) {
+        DisableGpioInt(pin);
+    }
 }
 
 bool GpioIn::IsActive() {
@@ -206,7 +220,7 @@ bool GpioIn::IsActive() {
 
 GpioIn::GpioIn() :
     Region((QStateHandler)&GpioIn::InitialPseudoState, GetCurrHsmn(), GetCurrName()),
-    m_config(NULL), m_client(HSM_UNDEF), m_debouncing(true),
+    m_config(NULL), m_client(HSM_UNDEF), m_filterGlitch(true), m_holdCount(0),
     m_stateTimer(GetHsmn(), STATE_TIMER), m_pulseTimer(GetHsmn(), PULSE_TIMER),
     m_holdTimer(GetHsmn(), HOLD_TIMER) {
     SET_EVT_NAME(GPIO_IN);
@@ -218,8 +232,8 @@ GpioIn::GpioIn() :
         }
     }
     FW_ASSERT(i < ARRAY_COUNT(CONFIG));
-    // Save hsmn to pin mapping.
-    SavePin(GetHsmn(), m_config->pin);
+    // Save config to pin mapping.
+    SaveConfig(m_config->pin, m_config);
     IncCurrHsmn();
 }
 
@@ -271,7 +285,7 @@ QState GpioIn::Stopped(GpioIn * const me, QEvt const * const e) {
             EVENT(e);
             GpioInStartReq const &req = static_cast<GpioInStartReq const &>(*e);
             me->m_client = req.GetFrom();
-            me->m_debouncing = req.IsDebouncing();
+            me->m_filterGlitch = req.IsFilterGlitch();
             me->SendCfm(new GpioInStartCfm(ERROR_SUCCESS), req);
             return Q_TRAN(&GpioIn::Started);
         }
@@ -293,10 +307,10 @@ QState GpioIn::Started(GpioIn * const me, QEvt const * const e) {
             return Q_HANDLED();
         }
         case Q_INIT_SIG: {
-            if (me->IsActive()) {
-                return Q_TRAN(&GpioIn::Active);
+            if (me->m_config->tracking) {
+                return Q_TRAN(&GpioIn::TrackMode);
             }
-            return Q_TRAN(&GpioIn::Inactive);
+            return Q_TRAN(&GpioIn::TriggerMode);
         }
         case GPIO_IN_STOP_REQ: {
             EVENT(e);
@@ -306,6 +320,45 @@ QState GpioIn::Started(GpioIn * const me, QEvt const * const e) {
         }
     }
     return Q_SUPER(&GpioIn::Root);
+}
+
+QState GpioIn::TriggerMode(GpioIn * const me, QEvt const * const e) {
+    switch (e->sig) {
+        case Q_ENTRY_SIG: {
+            EVENT(e);
+            return Q_HANDLED();
+        }
+        case Q_EXIT_SIG: {
+            EVENT(e);
+            return Q_HANDLED();
+        }
+        case TRIGGER: {
+            EVENT(e);
+            me->Send(new GpioInActiveInd(), me->m_client);
+            return Q_HANDLED();
+        }
+    }
+    return Q_SUPER(&GpioIn::Started);
+}
+
+QState GpioIn::TrackMode(GpioIn * const me, QEvt const * const e) {
+    switch (e->sig) {
+        case Q_ENTRY_SIG: {
+            EVENT(e);
+            return Q_HANDLED();
+        }
+        case Q_EXIT_SIG: {
+            EVENT(e);
+            return Q_HANDLED();
+        }
+        case Q_INIT_SIG: {
+            if (me->IsActive()) {
+                return Q_TRAN(&GpioIn::Active);
+            }
+            return Q_TRAN(&GpioIn::Inactive);
+        }
+    }
+    return Q_SUPER(&GpioIn::Started);
 }
 
 QState GpioIn::Inactive(GpioIn * const me, QEvt const * const e) {
@@ -324,22 +377,26 @@ QState GpioIn::Inactive(GpioIn * const me, QEvt const * const e) {
             EnableGpioInt(me->m_config->pin);
             if (me->IsActive()) {
                 me->Raise(new Evt(PIN_ACTIVE));
-            } else if (!me->m_debouncing) {
-                return Q_TRAN(&GpioIn::Inactive);
+            } else if (!me->m_filterGlitch) {
+                me->Raise(new Evt(SELF));
             }
             return Q_HANDLED();
         }
         case PIN_ACTIVE: {
             return Q_TRAN(&GpioIn::Active);
         }
+        case SELF: {
+            return Q_TRAN(&GpioIn::Inactive);
+        }
     }
-    return Q_SUPER(&GpioIn::Started);;
+    return Q_SUPER(&GpioIn::TrackMode);;
 }
 
 QState GpioIn::Active(GpioIn * const me, QEvt const * const e) {
     switch (e->sig) {
         case Q_ENTRY_SIG: {
             EVENT(e);
+            me->m_holdCount = 0;
             me->Send(new GpioInActiveInd(), me->m_client);
             return Q_HANDLED();
         }
@@ -355,8 +412,8 @@ QState GpioIn::Active(GpioIn * const me, QEvt const * const e) {
             EnableGpioInt(me->m_config->pin);
             if (!me->IsActive()) {
                 me->Raise(new Evt(PIN_INACTIVE));
-            } else if (!me->m_debouncing) {
-                return Q_TRAN(&GpioIn::Active);
+            } else if (!me->m_filterGlitch) {
+                me->Raise(new Evt(SELF));
             }
             return Q_HANDLED();
         }
@@ -366,8 +423,11 @@ QState GpioIn::Active(GpioIn * const me, QEvt const * const e) {
         case PIN_INACTIVE: {
             return Q_TRAN(&GpioIn::Inactive);
         }
+        case SELF: {
+            return Q_TRAN(&GpioIn::Active);
+        }
     }
-    return Q_SUPER(&GpioIn::Started);;
+    return Q_SUPER(&GpioIn::TrackMode);
 }
 
 QState GpioIn::PulseWait(GpioIn * const me, QEvt const * const e) {
@@ -414,9 +474,9 @@ QState GpioIn::Held(GpioIn * const me, QEvt const * const e) {
     switch (e->sig) {
         case Q_ENTRY_SIG: {
             EVENT(e);
-            me->Send(new GpioInHoldInd(), me->m_client);
+            me->Send(new GpioInHoldInd(++me->m_holdCount), me->m_client);
             me->m_holdTimer.Start(HOLD_TIMEOUT_MS);
-            // UW for test only to trigger hardfault
+            // For test only to trigger hardfault in debugger.
             //*(uint32_t *)(0xD0000000) = 0x1234;
             return Q_HANDLED();
         }
@@ -449,4 +509,3 @@ QState GpioIn::MyState(GpioIn * const me, QEvt const * const e) {
 */
 
 } // namespace APP
-

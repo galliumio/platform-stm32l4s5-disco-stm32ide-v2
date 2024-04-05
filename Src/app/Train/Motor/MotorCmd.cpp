@@ -109,24 +109,24 @@ static CmdStatus Stop(Console &console, Evt const *e) {
 static CmdStatus Run(Console &console, Evt const *e) {
     switch (e->sig) {
         case Console::CONSOLE_CMD: {
-            auto const &ind = static_cast<Console::ConsoleCmd const &>(*e);
-            if (ind.Argc() >= 2) {
-                MotorDir dir = STRING_EQUAL(ind.Argv(0), "b") ? MotorDir::BACKWARD : MotorDir::FORWARD;
-                uint32_t level = STRING_TO_NUM(ind.Argv(1), 0);
+            auto const &cmd = static_cast<Console::ConsoleCmd const &>(*e);
+            if (cmd.Argc() >= 2) {
+                MotorDir dir = STRING_EQUAL(cmd.Argv(0), "b") ? MotorDir::BACKWARD : MotorDir::FORWARD;
+                uint32_t level = STRING_TO_NUM(cmd.Argv(1), 0);
                 uint32_t accel = 100;
                 uint32_t decel = 100;
-                if (ind.Argc() >=3) {
-                    accel = STRING_TO_NUM(ind.Argv(2), 0);
+                if (cmd.Argc() >=3) {
+                    accel = STRING_TO_NUM(cmd.Argv(2), 0);
                 }
-                if (ind.Argc() >=4) {
-                    decel = STRING_TO_NUM(ind.Argv(3), 0);
+                if (cmd.Argc() >=4) {
+                    decel = STRING_TO_NUM(cmd.Argv(3), 0);
                 }
                 console.Print("level(%c) = %d, accel = %d, decel = %d\n\r",
                               (dir == MotorDir::FORWARD) ? 'f' : 'b', level, accel, decel);
                 console.SendReqMsg(new MotorRunReq(dir, level, accel, decel), MOTOR, MSG_UNDEF, true, console.GetMsgSeq());
                 break;
             }
-            console.Print("motor f|b <level (0-1000)> <accel level/s> <decel level/s> <\n\r");
+            console.Print("motor f|b <level (0-1000)> <accel level/s> <decel level/s>\n\r");
             console.Print("'f' - forward    'b' - backward");
             return CMD_DONE;
         }

@@ -129,6 +129,8 @@
 									<listOptionValue builtIn="false" value="&quot;../Src/app/Train&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../Src/app/Train/Headlight&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../Src/app/Train/Motor&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;../Src/app/LightCtrl&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;../Src/app/LightCtrl/Light&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;../Src/app/Ws2812&quot;"/>
 								</option>
 								<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.languagestandard.209233102" name="Language standard" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.languagestandard" useByScannerDiscovery="true" value="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.option.languagestandard.value.gnupp17" valueType="enumerated"/>

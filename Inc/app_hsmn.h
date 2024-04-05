@@ -78,6 +78,8 @@ namespace APP {
     ADD_HSM(TRAIN, 1) \
     ADD_HSM(HEADLIGHT, 1) \
     ADD_HSM(MOTOR, 1) \
+    ADD_HSM(LIGHT_CTRL, 1) \
+    ADD_HSM(LIGHT, 4) \
     ADD_HSM(WS2812, 1)
 
 #define ALIAS_HSM \
@@ -102,7 +104,11 @@ namespace APP {
     ADD_ALIAS(COMPOSITE_REG0, COMPOSITE_REG) \
     ADD_ALIAS(COMPOSITE_REG1, COMPOSITE_REG+1) \
     ADD_ALIAS(COMPOSITE_REG2, COMPOSITE_REG+2) \
-    ADD_ALIAS(COMPOSITE_REG3, COMPOSITE_REG+3)
+    ADD_ALIAS(COMPOSITE_REG3, COMPOSITE_REG+3) \
+    ADD_ALIAS(FRONT_LIGHT_0,  LIGHT) \
+    ADD_ALIAS(FRONT_LIGHT_1,  LIGHT+1) \
+    ADD_ALIAS(REAR_LIGHT_0,   LIGHT+2) \
+    ADD_ALIAS(REAR_LIGHT_1,   LIGHT+3)
 
 #undef ADD_HSM
 #undef ADD_ALIAS
@@ -121,17 +127,18 @@ enum {
 enum
 {
     PRIO_SENSOR         = 31,
+    PRIO_GPIO_IN_ACT    = 30,
     PRIO_UART1_ACT      = 29,
     PRIO_SYSTEM         = 26,
-    PRIO_TRAIN          = 23,
+    PRIO_TRAIN          = 25,
+    PRIO_LIGHT_CTRL     = 24,
+    PRIO_WS2812         = 23,
     PRIO_ILI9341        = 22,
     PRIO_GUI_MGR        = 21,
     PRIO_WIFI           = 20,
     PRIO_NODE           = 18,
-    PRIO_GPIO_IN_ACT    = 16,
-    PRIO_DEMO           = 10,
-    PRIO_GPIO_OUT_ACT   = 9,
-    PRIO_WS2812         = 8,
+    PRIO_GPIO_OUT_ACT   = 10,
+    PRIO_DEMO           = 8,
     PRIO_AO_WASHING_MACHINE = 7,
     PRIO_TRAFFIC        = 6,
     PRIO_LEVEL_METER    = 5,

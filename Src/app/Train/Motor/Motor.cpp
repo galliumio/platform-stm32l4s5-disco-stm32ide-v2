@@ -356,6 +356,7 @@ QState Motor::Idle(Motor * const me, QEvt const * const e) {
                 me->m_setSpeed = LESS(req.GetSpeed(), (uint32_t)MAX_SPEED);
                 me->m_dir = req.GetDir();
                 me->m_step = me->CalStep(req.GetAccel());
+                me->SendCfmMsg(new MotorRunCfm(MSG_ERROR_PENDING), req);
                 me->m_inMsg = req;
                 return Q_TRAN(&Motor::Accel);
             }
@@ -435,6 +436,7 @@ QState Motor::Running(Motor * const me, QEvt const * const e) {
                     }
                 }
                 me->SendCfmMsg(new MotorRunCfm(MSG_ERROR_ABORTED, me->m_inMsg.GetMsgTo()), me->m_inMsg);
+                me->SendCfmMsg(new MotorRunCfm(MSG_ERROR_PENDING), req);
                 me->m_inMsg = req;
                 return Q_HANDLED();
             }

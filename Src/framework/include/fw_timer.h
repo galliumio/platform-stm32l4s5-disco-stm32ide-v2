@@ -63,6 +63,9 @@ public:
     void Restart(uint32_t timeoutMs, Type type = ONCE);
     void Stop();
 
+    // Helper function to return the timeout duration from the current system time to the specified wake-up time.
+    static uint32_t GetTimeoutMs(uint32_t wakeTimeMs);
+
 protected:
     bool IsMatch(QEvt const *other) {
         // For a match, both the signal and the associated hsmn must match

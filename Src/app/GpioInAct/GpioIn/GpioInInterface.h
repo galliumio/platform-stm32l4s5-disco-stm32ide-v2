@@ -75,11 +75,11 @@ public:
     enum {
         TIMEOUT_MS = 100
     };
-    GpioInStartReq(bool debouncing = true) :
-        Evt(GPIO_IN_START_REQ), m_debouncing(debouncing) {}
-    bool IsDebouncing() const { return m_debouncing; }
+    GpioInStartReq(bool filterGlitch = true) :
+        Evt(GPIO_IN_START_REQ), m_filterGlitch(filterGlitch) {}
+    bool IsFilterGlitch() const { return m_filterGlitch; }
 private:
-    bool m_debouncing;        // True to enable debouncing.
+    bool m_filterGlitch;
 };
 
 class GpioInStartCfm : public ErrorEvt {
@@ -123,8 +123,11 @@ public:
 
 class GpioInHoldInd : public Evt {
 public:
-    GpioInHoldInd() :
-        Evt(GPIO_IN_HOLD_IND) {}
+    GpioInHoldInd(uint32_t count) :
+        Evt(GPIO_IN_HOLD_IND), m_count(count) {}
+    uint32_t GetCount() const { return m_count; }
+private:
+    uint32_t m_count;
 };
 
 } // namespace APP

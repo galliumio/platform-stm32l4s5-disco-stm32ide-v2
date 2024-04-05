@@ -133,10 +133,10 @@ public:
     // Using built-in event sequence record.
     void SendReq(Evt *e, Hsmn to, bool reset) { SendReq(e, to, reset, m_evtSeq); }
     void SendInd(Evt *e, Hsmn to, bool reset) { SendReq(e, to, reset); }
-    bool CheckCfm(ErrorEvt const &e, bool &allReceived, EvtSeqRec &seqRec);
-    bool CheckRsp(ErrorEvt const &e, bool &allReceived, EvtSeqRec &seqRec) { return CheckCfm(e, allReceived, seqRec); }
-    bool CheckCfm(ErrorEvt const &e, bool &allReceived) { return CheckCfm(e, allReceived, m_evtSeq); }
-    bool CheckRsp(ErrorEvt const &e, bool &allReceived) { return CheckCfm(e, allReceived); }
+    bool CheckCfm(ErrorEvt const &e, bool &allReceived, EvtSeqRec &seqRec, bool *pending = nullptr);
+    bool CheckRsp(ErrorEvt const &e, bool &allReceived, EvtSeqRec &seqRec, bool *pending = nullptr) { return CheckCfm(e, allReceived, seqRec, pending); }
+    bool CheckCfm(ErrorEvt const &e, bool &allReceived, bool *pending = nullptr) { return CheckCfm(e, allReceived, m_evtSeq, pending); }
+    bool CheckRsp(ErrorEvt const &e, bool &allReceived, bool *pending = nullptr) { return CheckCfm(e, allReceived, pending); }
 
     // Const req. An event being processed.
     void SendCfm(Evt *e, Evt const &req) {
@@ -160,9 +160,9 @@ public:
     void SendCfmMsg(MsgEvt *e, MsgEvt &savedReq);
     void SendRspMsg(MsgEvt *e, MsgEvt const &req) { SendCfmMsg(e, req); }
     void SendRspMsg(MsgEvt *e, MsgEvt &savedReq) { SendCfmMsg(e, savedReq); }
-    bool CheckCfmMsg(ErrorMsgEvt const &e, bool &allReceived, MsgSeqRec &seqRec);
-    bool CheckRspMsg(ErrorMsgEvt const &e, bool &allReceived, MsgSeqRec &seqRec) {
-        return CheckCfmMsg(e, allReceived, seqRec);
+    bool CheckCfmMsg(ErrorMsgEvt const &e, bool &allReceived, MsgSeqRec &seqRec, bool *pending = nullptr);
+    bool CheckRspMsg(ErrorMsgEvt const &e, bool &allReceived, MsgSeqRec &seqRec, bool *pending = nullptr) {
+        return CheckCfmMsg(e, allReceived, seqRec, pending);
     }
 
 protected:

@@ -38,6 +38,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include "TestPins.h"
 #include "qpcpp.h"
 #include "bsp.h"
 
@@ -174,6 +175,9 @@ void QXK::onIdle(void) {
     QF_INT_DISABLE();
     //GPIOA->BSRR |= (LED_LD2);        // turn LED[n] on
     //GPIOA->BSRR |= (LED_LD2 << 16);  // turn LED[n] off
+    // Test only
+    //TEST_PIN_SET(TP_1);
+    //TEST_PIN_CLEAR(TP_1);
     idleCnt++;
     QF_INT_ENABLE();
 

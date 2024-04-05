@@ -60,6 +60,7 @@ public:
     // Non-constant version of Get functions will be added if needed.
     Key const &GetKey() const { return m_key; }
     Value const &GetValue() const { return m_value; }
+    void Set(Key const &k, Value const &v) { m_key = k; m_value = v; }
     void SetKey(Key const &k) { m_key = k; }
     void SetValue(Value const &v) { m_value = v; }
 

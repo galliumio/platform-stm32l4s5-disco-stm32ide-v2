@@ -67,20 +67,15 @@ public:
         }
         m_map.Save(KeyValue<Type, Sequence>(key, seq));
     }
+    // This function does NOT update the map regardless to the match result.
+    // A user may clear a matched entry by calling Clear().
     bool Match(Type key, Sequence seqToMatch) {
+        // An invalid/unused key never matches.
         if (key == m_map.GetUnusedKey()) {
             return false;
         }
         KeyValue<Type, Sequence> *kv = m_map.GetByKey(key);
-        if (kv == NULL) {
-            return false;
-        }
-        if (kv->GetValue() != seqToMatch) {
-            return false;
-        }
-        // Clear entry once matched.
-        *kv = m_map.GetUnusedKv();
-        return true;
+        return (kv && (kv->GetValue() == seqToMatch));
     }
     void Clear(Type key) { m_map.ClearByKey(key); }
     bool IsCleared(Type key) {

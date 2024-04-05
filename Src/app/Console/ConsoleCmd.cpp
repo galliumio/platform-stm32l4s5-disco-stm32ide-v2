@@ -47,7 +47,6 @@
 #include "ConsoleCmd.h"
 #include "LogCmd.h"
 #include "SystemCmd.h"
-//#include "WifiStCmd.h"
 #include "DemoCmd.h"
 #include "GpioOutCmd.h"
 #include "AOWashingMachineCmd.h"
@@ -55,7 +54,9 @@
 #include "SimpleActCmd.h"
 #include "CompositeActCmd.h"
 #include "MotorCmd.h"
-#include "HeadlightCmd.h"
+#include "Ws2812Cmd.h"
+#include "LightCmd.h"
+#include "LightCtrlCmd.h"
 #include "TestCode.h"
 #include <memory>
 
@@ -336,7 +337,9 @@ static CmdHandler const cmdHandler[] = {
     { "simp",       SimpleActCmd,    "Template/SimpleAct testing", 0 },
     { "comp",       CompositeActCmd, "Template/CompositeAct testing", 0 },
     { "motor",      MotorCmd,   "Motor control", 0 },
-    { "hl",         HeadlightCmd, "Headlight control", 0 },
+    { "ws2812",     Ws2812Cmd,  "WS2812 LED", 0 },
+    { "light",      LightCmd,   "Light control (single)", 0 },
+    { "lc",         LightCtrlCmd, "Light control (all)", 0 },
     { "?",          List,       "List commands", 0 },
 };
 

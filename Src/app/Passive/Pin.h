@@ -53,7 +53,8 @@ public:
     void Init(GPIO_TypeDef *port,  uint16_t pin, uint32_t mode = GPIO_MODE_OUTPUT_PP, uint32_t pull = GPIO_PULLUP,
               uint32_t af = 0, uint32_t speed = GPIO_SPEED_FREQ_VERY_HIGH);
     void DeInit();
-    // Critical section not required for the following functions since they use atomic set/clear registers.
+    // Critical section is not required for the following functions since they use atomic pin-wise set/clear registers.
+    // However if a single pin is shared by multiple threads, external critical section may be required.
     // Single-pin operations.
     void Set()   const  { HAL_GPIO_WritePin(m_port, m_pin, GPIO_PIN_SET); }
     void Clear() const  { HAL_GPIO_WritePin(m_port, m_pin, GPIO_PIN_RESET); }

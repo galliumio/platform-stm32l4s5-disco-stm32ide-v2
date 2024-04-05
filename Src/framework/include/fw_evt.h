@@ -124,6 +124,15 @@ public:
     Error GetError() const { return m_error; }
     Hsmn GetOrigin() const { return m_origin; }
     Reason GetReason() const {return m_reason; }
+    bool IsSuccess() const {
+        return m_error == ERROR_SUCCESS;
+    }
+    bool IsPending() const {
+        return m_error == ERROR_PENDING;
+    }
+    bool IsError() const {
+        return !(IsSuccess() || IsPending());
+    }
 protected:
     Error m_error;      // Common error code.
     Hsmn m_origin;      // HSM originating the error.

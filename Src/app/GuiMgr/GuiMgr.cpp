@@ -69,113 +69,48 @@ static char const * const interfaceEvtName[] = {
 };
 
 // Bitmap structure created with EmWin utility (located under GuiMgr/Bitmaps)
-extern "C" const GUI_BITMAP bmRealtimeDesign;
-extern "C" const GUI_BITMAP bmhelloworld;
-extern "C" const GUI_BITMAP bmb_0001;
-extern "C" const GUI_BITMAP bmb_0002;
-extern "C" const GUI_BITMAP bmb_0003;
-extern "C" const GUI_BITMAP bmb_0004;
-extern "C" const GUI_BITMAP bmb_0005;
-extern "C" const GUI_BITMAP bmb_0006;
-extern "C" const GUI_BITMAP bmb_0007;
-extern "C" const GUI_BITMAP bmb_0008;
-extern "C" const GUI_BITMAP bmColordots;
-extern "C" const GUI_BITMAP bmLedpanel6;
-// Gallium logos for train sign.
-extern "C" const GUI_BITMAP bmLogo_90x90;
-extern "C" const GUI_BITMAP bmStem_90x90;
-
-static const GUI_BITMAP *guiBitmap[] =
-{
-    &bmRealtimeDesign,
-    &bmhelloworld,
-    &bmb_0001,
-    &bmb_0002,
-    &bmb_0003,
-    &bmb_0004,
-    &bmb_0005,
-    &bmb_0006,
-    &bmb_0007,
-    &bmb_0008,
-    &bmColordots,
-    &bmLedpanel6,
-};
+extern "C" const GUI_BITMAP bmHierarki_320x90;
+extern "C" const GUI_BITMAP bmHydrogen_320x90;
+extern "C" const GUI_BITMAP bmRidingStatecharts_320x90;
 
 static const GUI_BITMAP *logoBitmap[] =
 {
-    &bmLogo_90x90,
-    &bmStem_90x90,
+    &bmHierarki_320x90,
+    &bmHydrogen_320x90,
+    &bmRidingStatecharts_320x90,
 };
 
-
-const GuiMgr::TimeoutMap GuiMgr::m_ticker1Timeout[] = {
-    { 4,  40   },
-    { 3,  60   },
-    { 2,  90   },
-    { 1,  120  },
-    { 0,  1500 }
+const GuiMgr::ScrollMap GuiMgr::m_text1ScrollMap[] = {
+    { 4,  {100,  -6 }},
+    { 3,  {100,  -4 }},
+    { 2,  {100,  -2 }},
+    { 1,  {100,  -1 }},
+    { 0,  {2000,  -1 }}      // 5000
 };
 
-const GuiMgr::TimeoutMap GuiMgr::m_ticker2Timeout[] = {
-    { 4,  10   },
-    { 3,  20  },
-    { 2,  40  },
-    { 1,  80  },
-    { 0,  3000 }
+const GuiMgr::ScrollMap GuiMgr::m_bmpScrollMap[] = {
+    { 40, {100,  -20 }},
+    { 20, {100,  -8 }},
+    { 8,  {100,  -4 }},
+    { 4,  {100,  -2 }},
+    { 1,  {100,  -1 }},
+    { 0,  {2000,  -1 }}       // 5000
 };
 
-const GuiMgr::TimeoutMap GuiMgr::m_ticker3Timeout[] = {
-    { 4,  20   },
-    { 3,  40   },
-    { 2,  80  },
-    { 1,  120  },
-    { 0,  3000 }
-};
-
-const GuiMgr::TimeoutMap GuiMgr::m_ticker4Timeout[] = {
-    { 4,  60   },
-    { 3,  100  },
-    { 2,  140  },
-    { 1,  180  },
-    { 0,  3000 }
-};
-
-const GuiMgr::TimeoutMap GuiMgr::m_text1Timeout[] = {
-    //{ 10, 30   },
-    //{ 6,  30   },
-    { 4,  50   },
-    { 3,  80   },
-    { 2,  120  },
-    { 1,  160  },
-    { 0,  5000 }
-};
-
-const GuiMgr::TimeoutMap GuiMgr::m_bmpTimeout[] = {
-    { 10, 50   },
-    { 8,  60   },
-    { 6,  80   },
-    { 4,  100  },
-    { 2,  150  },
-    { 1,  200  },
-    { 0,  5000 }    // was 5000
-};
-
-// Helper function to map offset to timeout for speed control.
-uint32_t GuiMgr::GetTimeout(TimeoutMap const *map, uint32_t mapLen, uint32_t offsetLeft, uint32_t offsetRight) {
-    uint32_t timeoutLeft  = GetTimeout(map, mapLen, offsetLeft);
-    uint32_t timeoutRight = GetTimeout(map, mapLen, offsetRight);
-    return GREATER(timeoutLeft, timeoutRight);
+// Helper function to map offset to scroll object for speed control.
+GuiMgr::Scroll GuiMgr::GetScroll(ScrollMap const *map, uint32_t mapLen, uint32_t offsetLeft, uint32_t offsetRight) {
+    return GetScroll(map, mapLen, LESS(offsetLeft, offsetRight));
 }
-uint32_t GuiMgr::GetTimeout(TimeoutMap const *map, uint32_t mapLen, uint32_t offset) {
+GuiMgr::Scroll GuiMgr::GetScroll(ScrollMap const *map, uint32_t mapLen, uint32_t offset) {
     uint32_t i;
     FW_ASSERT(map);
     for (i=0; i<mapLen; i++) {
-        if (offset >= map[i].offset) {
-            return map[i].timeoutMs;
+        if (offset >= map[i].m_offset) {
+            return map[i].m_scroll;
         }
     }
     FW_ASSERT(0);
-    return 0;
+    return Scroll();
 }
 
 void GuiMgr::SetDirty(Area const &area) {
@@ -239,14 +174,8 @@ GuiMgr::GuiMgr() :
     Active((QStateHandler)&GuiMgr::InitialPseudoState, GUI_MGR, "GUI_MGR"),
     m_hwinSigMap(m_hwinSigStor, ARRAY_COUNT(m_hwinSigStor), HwinSig(0, Q_USER_SIG)),
     m_dirtyAreaList(m_dirtyAreaStor, DIRTY_AREA_ORDER), m_ticker1CycleCnt(0), m_bmpCycleCnt(0), m_updateIdx(0), m_inEvt(QEvt::STATIC_EVT),
-    m_stateTimer(GetHsmn(), STATE_TIMER), m_syncTimer(GetHsmn(), SYNC_TIMER),
-    m_bgWndTimer(GetHsmn(), BG_WND_TIMER),
-    m_ticker1Timer(GetHsmn(), TICKER1_TIMER),
-    m_ticker2Timer(GetHsmn(), TICKER2_TIMER),
-    m_ticker3Timer(GetHsmn(), TICKER3_TIMER),
-    m_ticker4Timer(GetHsmn(), TICKER4_TIMER),
-    m_text1Timer(GetHsmn(), TEXT1_TIMER),
-    m_bmpTimer(GetHsmn(), BMP_TIMER),
+    m_stateTimer(GetHsmn(), STATE_TIMER), m_syncTimer(GetHsmn(), SYNC_TIMER), m_bgWndTimer(GetHsmn(), BG_WND_TIMER),
+    m_text1Timer(GetHsmn(), TEXT1_TIMER), m_bmpTimer(GetHsmn(), BMP_TIMER),
     m_updateTimer(GetHsmn(), UPDATE_TIMER){
     SET_EVT_NAME(GUI_MGR);
 }
@@ -434,11 +363,6 @@ QState GuiMgr::Started(GuiMgr * const me, QEvt const * const e) {
         }
         case Q_INIT_SIG: {
             return Q_TRAN(&GuiMgr::TrainSign);
-            //return Q_TRAN(&GuiMgr::Ticker);
-            //return Q_TRAN(&GuiMgr::Signage);
-            //return Q_TRAN(&GuiMgr::Bmp);
-            //return Q_TRAN(&GuiMgr::ColorTest);
-            //return Q_HANDLED();
         }
         case BG_WND_TIMER: {
             EVENT(e);
@@ -470,32 +394,32 @@ QState GuiMgr::TrainSign(GuiMgr * const me, QEvt const * const e) {
         case Q_ENTRY_SIG: {
             EVENT(e);
             // Logo.
-            me->AddWin(me->m_bmp.Create(me, me->m_bgWnd.GetHandle(), 0, 0, 90, 90, &WmCallback), PAINT_BMP);
+            me->AddWin(me->m_bmp.Create(me, me->m_bgWnd.GetHandle(), 0, 0, 320, 90, &WmCallback), PAINT_BMP);
             uint32_t bmpCnt = ARRAY_COUNT(logoBitmap);
             for (uint32_t i=0; i<bmpCnt && i<GuiBmp::IMG_CNT; i++) {
                 me->m_bmp.SetBitmap(i, logoBitmap[i]);
             }
-            me->m_bmpTimer.Start(GetTimeout(m_bmpTimeout, ARRAY_COUNT(m_bmpTimeout), 0, 0));
-            // Info bar (m_ticker1).
-            me->AddWin(me->m_ticker1.Create(me, me->m_bgWnd.GetHandle(), 90, 0, 230, 45, 0xff0000, &WmCallback), PAINT_TICKER1);
-            me->m_ticker1.SetText(0, "Gallium IO", GUI_FONT_32B_ASCII, 0x7f7f7f, 0xff0000, GUI_TA_HCENTER|GUI_TA_VCENTER);
-            // Route number (m_ticker2).
-            me->AddWin(me->m_ticker2.Create(me, me->m_bgWnd.GetHandle(), 90, 45, 230, 45, 0xff0000, &WmCallback), PAINT_TICKER2);
-            me->m_ticker2.SetText(0, "IGX 1042", GUI_FONT_32B_ASCII, 0x7f7f7f, 0xff0000, GUI_TA_HCENTER|GUI_TA_VCENTER);
-            // Origin station (m_ticker3).
-            me->AddWin(me->m_ticker3.Create(me, me->m_bgWnd.GetHandle(), 0, 90, 320, 50, 0x3f0000, &WmCallback), PAINT_TICKER3);
-            me->m_ticker3.SetText(0, "Bellevue, WA =>", GUI_FONT_32B_1, 0x7f7f7f, 0x3f0000, GUI_TA_LEFT|GUI_TA_VCENTER);
-            // Destination station (m_ticker4).
-            me->AddWin(me->m_ticker4.Create(me, me->m_bgWnd.GetHandle(), 0, 140, 320, 50, 0x3f0000, &WmCallback), PAINT_TICKER4);
-            me->m_ticker4.SetText(0, "=> San Jose, CA", GUI_FONT_32B_1, 0x7f7f7f, 0x3f0000, GUI_TA_RIGHT|GUI_TA_VCENTER);
-            // "via" (m_ticker5)
-            me->AddWin(me->m_ticker5.Create(me, me->m_bgWnd.GetHandle(), 0, 190, 50, 50, 0x1f0000, &WmCallback), PAINT_TICKER5);
-            me->m_ticker5.SetText(0, "via", GUI_FONT_24_ASCII, 0x7f7f7f, 0x1f0000, GUI_TA_HCENTER|GUI_TA_VCENTER);
+            me->m_bmpScroll = GetScroll(m_bmpScrollMap, ARRAY_COUNT(m_bmpScrollMap), 0, 0);
+            FW_ASSERT(me->m_bmpScroll.m_timeoutMs && me->m_bmpScroll.m_delta);
+            me->m_bmpTimer.Start(me->m_bmpScroll.m_timeoutMs);
+            // Origin station (m_ticker1).
+            me->AddWin(me->m_ticker1.Create(me, me->m_bgWnd.GetHandle(), 0, 90, 320, 50, 0x3f0000, &WmCallback), PAINT_TICKER1);
+            me->m_ticker1.SetText(0, "Upper Garden Main =>", GUI_FONT_32B_1, 0x7f7f7f, 0x3f0000, GUI_TA_LEFT|GUI_TA_VCENTER);
+            // Destination station (m_ticker2).
+            me->AddWin(me->m_ticker2.Create(me, me->m_bgWnd.GetHandle(), 0, 140, 320, 50, 0x3f0000, &WmCallback), PAINT_TICKER2);
+            me->m_ticker2.SetText(0, "Lower Garden Glacier", GUI_FONT_32B_1, 0x7f7f7f, 0x3f0000, GUI_TA_RIGHT|GUI_TA_VCENTER);
+            // "via" (m_ticker3)
+            me->AddWin(me->m_ticker3.Create(me, me->m_bgWnd.GetHandle(), 0, 190, 50, 50, 0x1f0000, &WmCallback), PAINT_TICKER3);
+            me->m_ticker3.SetText(0, "via", GUI_FONT_24_ASCII, 0x7f7f7f, 0x1f0000, GUI_TA_HCENTER|GUI_TA_VCENTER);
             // Stop stations (m_text1).
             me->AddWin(me->m_text1.Create(me, me->m_bgWnd.GetHandle(), 50, 190, 270, 50, 0x1f0000, &WmCallback), PAINT_TEXT1);
-            me->m_text1.SetText(0, "Portland, OR\nSan Francisco, CA\nPalo Alto, CA",
+            me->m_text1.SetText(0, "Hillside Garden",
                                 GUI_FONT_24B_1, 0x7f7f7f, 0x1f0000);
-            me->m_text1Timer.Start(GetTimeout(m_text1Timeout, ARRAY_COUNT(m_text1Timeout), 0, 0));
+            me->m_text1.SetText(1, "Mid Garden Main",
+                                GUI_FONT_24B_1, 0x7f7f7f, 0x1f0000);
+            me->m_text1Scroll = GetScroll(m_text1ScrollMap, ARRAY_COUNT(m_text1ScrollMap), 0, 0);
+            FW_ASSERT(me->m_text1Scroll.m_timeoutMs && me->m_text1Scroll.m_delta);
+            me->m_text1Timer.Start(me->m_text1Scroll.m_timeoutMs);
             WM_Exec();
             return Q_HANDLED();
         }
@@ -505,8 +429,6 @@ QState GuiMgr::TrainSign(GuiMgr * const me, QEvt const * const e) {
             me->RemoveWin(me->m_ticker1.Destroy());
             me->RemoveWin(me->m_ticker2.Destroy());
             me->RemoveWin(me->m_ticker3.Destroy());
-            me->RemoveWin(me->m_ticker4.Destroy());
-            me->RemoveWin(me->m_ticker5.Destroy());
             me->RemoveWin(me->m_text1.Destroy());
             me->m_bmpTimer.Stop();
             me->m_text1Timer.Stop();
@@ -532,16 +454,6 @@ QState GuiMgr::TrainSign(GuiMgr * const me, QEvt const * const e) {
             me->SetDirty(me->m_ticker3.Paint());
             return Q_HANDLED();
         }
-        case PAINT_TICKER4: {
-            EVENT(e);
-            me->SetDirty(me->m_ticker4.Paint());
-            return Q_HANDLED();
-        }
-        case PAINT_TICKER5: {
-            EVENT(e);
-            me->SetDirty(me->m_ticker5.Paint());
-            return Q_HANDLED();
-        }
         case PAINT_TEXT1: {
             EVENT(e);
             me->SetDirty(me->m_text1.Paint());
@@ -549,11 +461,13 @@ QState GuiMgr::TrainSign(GuiMgr * const me, QEvt const * const e) {
         }
         case BMP_TIMER: {
             EVENT(e);
-            uint32_t imgIdx = 0;
-            uint32_t offsetLeft = 0;
-            uint32_t offsetRight = 0;
-            me->m_bmp.Update(-1, imgIdx, offsetLeft, offsetRight);
-            me->m_bmpTimer.Start(GetTimeout(m_bmpTimeout, ARRAY_COUNT(m_bmpTimeout), offsetLeft, offsetRight));
+            uint32_t imgIdx;
+            uint32_t offsetLeft;
+            uint32_t offsetRight;
+            me->m_bmp.Update(me->m_bmpScroll.m_delta, imgIdx, offsetLeft, offsetRight);
+            me->m_bmpScroll = GetScroll(m_bmpScrollMap, ARRAY_COUNT(m_bmpScrollMap), offsetLeft, offsetRight);
+            FW_ASSERT(me->m_bmpScroll.m_timeoutMs && me->m_bmpScroll.m_delta);
+            me->m_bmpTimer.Start(me->m_bmpScroll.m_timeoutMs);
             WM_Exec();
             return Q_HANDLED();
         }
@@ -562,298 +476,15 @@ QState GuiMgr::TrainSign(GuiMgr * const me, QEvt const * const e) {
             uint32_t bufIdx;
             uint32_t offsetLeft;
             uint32_t offsetRight;
-            me->m_text1.Update(-1, bufIdx, offsetLeft, offsetRight);
-            me->m_text1Timer.Restart(GetTimeout(m_text1Timeout, ARRAY_COUNT(m_text1Timeout), offsetLeft, offsetRight));
+            me->m_text1.Update(me->m_text1Scroll.m_delta, bufIdx, offsetLeft, offsetRight);
+            me->m_text1Scroll = GetScroll(m_text1ScrollMap, ARRAY_COUNT(m_text1ScrollMap), offsetLeft, offsetRight);
+            FW_ASSERT(me->m_text1Scroll.m_timeoutMs && me->m_text1Scroll.m_delta);
+            me->m_text1Timer.Start(me->m_text1Scroll.m_timeoutMs);
             WM_Exec();
             return Q_HANDLED();
         }
     }
     return Q_SUPER(&GuiMgr::Started);
-}
-
-QState GuiMgr::ColorTest(GuiMgr * const me, QEvt const * const e) {
-    static const uint32_t TEST_COLOR[] = {
-            0x0000ff,   // red  (0:0:1)
-            0x007fff,   // orange (0:1:2)
-            0x00ffff,   // yellow (0:1:1)
-            0x7f00bf,   // pinkish purple (2:0:3)
-            0xff7f7f,   // lavendar (4:3:3)
-            0x3f7fbf,   // light brown (1:2:3)
-            0xffdf00,   // turqoise (tiffany blue)
-            0x7fbf00,   // lake green
-    };
-    switch (e->sig) {
-        case Q_ENTRY_SIG: {
-            EVENT(e);
-            //me->m_bgWnd.SetColor(0x0000ff, 0x0000ff);
-            me->m_bgWnd.SetColor(0x00ff00, 0x00ff00);
-            me->m_updateIdx = 1;
-            WM_Exec();
-            // Commented for test.
-            me->m_updateTimer.Start(COLOR_TEST_TIMEOUT_MS, Timer::PERIODIC);
-            return Q_HANDLED();
-        }
-        case Q_EXIT_SIG: {
-            EVENT(e);
-            me->RemoveWin(me->m_text1.Destroy());
-            return Q_HANDLED();
-        }
-        case UPDATE_TIMER: {
-            EVENT(e);
-            FW_ASSERT(me->m_updateIdx < ARRAY_COUNT(TEST_COLOR));
-            uint32_t color = TEST_COLOR[me->m_updateIdx];
-            me->m_bgWnd.SetColor(color, color);
-            WM_Exec();
-            me->m_updateIdx++;
-            if (me->m_updateIdx >= ARRAY_COUNT(TEST_COLOR)) {
-                me->m_updateIdx = 0;
-            }
-            return Q_HANDLED();
-        }
-    }
-    return Q_SUPER(&GuiMgr::Started);
-}
-
-QState GuiMgr::Signage(GuiMgr * const me, QEvt const * const e) {
-    switch (e->sig) {
-        case Q_ENTRY_SIG: {
-            EVENT(e);
-            WM_HWIN handle;
-            handle = me->m_text1.Create(me, me->m_bgWnd.GetHandle(), 3, 3, 122, 78, 0x200000, &WmCallback);
-            me->AddWin(handle, PAINT_TEXT1);
-            me->m_text1.SetText  (0, "  Real-time Design with Statecharts",
-                                  &GUI_Font24B_ASCII, 0xffffff, 0x200000);
-            handle = me->m_ticker1.Create(me, me->m_bgWnd.GetHandle(), 3, 81, 122, 20, 0x000020, &WmCallback);
-            me->AddWin(handle, PAINT_TICKER1);
-            me->m_ticker1.SetText(0, " Robust",
-                                  GUI_FONT_20B_ASCII, 0xffffff, 0x000020);
-            handle = me->m_ticker2.Create(me, me->m_bgWnd.GetHandle(), 3, 101, 122, 24, 0x000020, &WmCallback);
-            me->AddWin(handle, PAINT_TICKER2);
-            me->m_ticker2.SetText(0, "            Agile",
-                                  GUI_FONT_20B_ASCII, 0xffffff, 0x000020);
-            WM_Exec();
-            return Q_HANDLED();
-        }
-        case Q_EXIT_SIG: {
-            EVENT(e);
-            me->RemoveWin(me->m_text1.Destroy());
-            me->RemoveWin(me->m_ticker1.Destroy());
-            me->RemoveWin(me->m_ticker2.Destroy());
-            return Q_HANDLED();
-        }
-        case PAINT_TICKER1: {
-            EVENT(e);
-            me->SetDirty(me->m_ticker1.Paint());
-            return Q_HANDLED();
-        }
-        case PAINT_TICKER2: {
-            EVENT(e);
-            me->SetDirty(me->m_ticker2.Paint());
-            return Q_HANDLED();
-        }
-        case PAINT_TEXT1: {
-            EVENT(e);
-            me->SetDirty(me->m_text1.Paint());
-            return Q_HANDLED();
-        }
-    }
-    return Q_SUPER(&GuiMgr::Started);
-}
-
-QState GuiMgr::Ticker(GuiMgr * const me, QEvt const * const e) {
-    switch (e->sig) {
-        case Q_ENTRY_SIG: {
-            EVENT(e);
-            WM_HWIN handle;
-            // Test only.
-            me->m_bgWnd.SetColor(0x3f3f3f, 0x3f3f3f);
-            handle = me->m_ticker1.Create(me, me->m_bgWnd.GetHandle(), 100, 100, 128, 22, 0x1f1f1f, &WmCallback);
-            me->AddWin(handle, PAINT_TICKER1);
-            me->m_ticker1.SetText(0, "Gallium Studio        ",
-                                  GUI_FONT_20B_ASCII, 0x7f7f7f, 0x0f0000);
-            me->m_ticker1.SetText(1, "Promoting STEM with Design     ",
-                                  GUI_FONT_20B_ASCII, 0x7f7f7f, 0x00000f);
-            me->m_ticker1.SetText(2, "Visit www.galliumstudio.com       ",
-                                  GUI_FONT_20B_ASCII, 0x7f7f7f, 0x000f00);
-            me->m_ticker1Timer.Start(GetTimeout(m_ticker1Timeout, ARRAY_COUNT(m_ticker1Timeout), 0, 0));
-
-            handle = me->m_text1.Create(me, me->m_bgWnd.GetHandle(), 100, 122, 128, 106, 0x1f1f1f, &WmCallback);
-            me->AddWin(handle, PAINT_TEXT1);
-            me->m_text1.SetText  (0, "Real-time Design with Statecharts",
-                                  GUI_FONT_16B_ASCII, 0x003d66, 0x400000);
-            me->m_text1.SetText  (1, "Robust and reliable",
-                                  GUI_FONT_20_ASCII, 0x007fff, 0x330800);
-            me->m_text1.SetText  (2, "C++, Javascript, Python and more...",
-                                  GUI_FONT_24_ASCII, 0xc0c0c0, 0x001911);
-            me->m_text1Timer.Start(GetTimeout(m_text1Timeout, ARRAY_COUNT(m_text1Timeout), 0, 0));
-            WM_Exec();
-            return Q_HANDLED();
-        }
-        case Q_EXIT_SIG: {
-            EVENT(e);
-            me->RemoveWin(me->m_ticker1.Destroy());
-            me->m_ticker1Timer.Stop();
-            me->RemoveWin(me->m_text1.Destroy());
-            me->m_text1Timer.Stop();
-            return Q_HANDLED();
-        }
-        case Q_INIT_SIG: {
-            return Q_TRAN(&GuiMgr::TickerNormal);
-        }
-        case GUI_MGR_TICKER_REQ: {
-            EVENT(e);
-            auto const &req = static_cast<GuiMgrTickerReq const &>(*e);
-            // Indices 0-2 are for ticker1. Indices 3-5 are for text1.
-            if (req.GetIndex() < 3) {
-                me->m_ticker1.SetText(req.GetIndex(), req.GetText(), GUI_FONT_20B_ASCII, req.GetFgColor(), req.GetBgColor());
-            } else if (req.GetIndex() < 6) {
-                me->m_text1.SetText(req.GetIndex() - 3, req.GetText(), GUI_FONT_13B_ASCII, req.GetFgColor(), req.GetBgColor());
-            }
-            me->SendCfmMsg(new GuiMgrTickerCfm(MSG_ERROR_SUCCESS), req);
-            WM_Exec();
-            return Q_HANDLED();
-        }
-        case PAINT_TICKER1: {
-            EVENT(e);
-            me->SetDirty(me->m_ticker1.Paint());
-            return Q_HANDLED();
-        }
-        case PAINT_TEXT1: {
-            EVENT(e);
-            me->SetDirty(me->m_text1.Paint());
-            return Q_HANDLED();
-        }
-        case TICKER1_TIMER: {
-            EVENT(e);
-            uint32_t bufIdx;
-            uint32_t offsetLeft;
-            uint32_t offsetRight;
-            me->m_ticker1.Update(-1, bufIdx, offsetLeft, offsetRight);
-            me->m_ticker1Timer.Restart(GetTimeout(m_ticker1Timeout, ARRAY_COUNT(m_ticker1Timeout), offsetLeft, offsetRight));
-            WM_Exec();
-            return Q_HANDLED();
-        }
-        case TEXT1_TIMER: {
-            EVENT(e);
-            uint32_t bufIdx;
-            uint32_t offsetLeft;
-            uint32_t offsetRight;
-            me->m_text1.Update(-1, bufIdx, offsetLeft, offsetRight);
-            me->m_text1Timer.Restart(GetTimeout(m_text1Timeout, ARRAY_COUNT(m_text1Timeout), offsetLeft, offsetRight));
-            WM_Exec();
-            return Q_HANDLED();
-        }
-    }
-    return Q_SUPER(&GuiMgr::Started);
-}
-
-QState GuiMgr::TickerNormal(GuiMgr * const me, QEvt const * const e) {
-    switch (e->sig) {
-        case Q_ENTRY_SIG: {
-            EVENT(e);
-            return Q_HANDLED();
-        }
-        case Q_EXIT_SIG: {
-            EVENT(e);
-            return Q_HANDLED();
-        }
-    }
-    return Q_SUPER(&GuiMgr::Ticker);
-}
-
-QState GuiMgr::TickerAlert(GuiMgr * const me, QEvt const * const e) {
-    switch (e->sig) {
-        case Q_ENTRY_SIG: {
-            EVENT(e);
-            return Q_HANDLED();
-        }
-        case Q_EXIT_SIG: {
-            EVENT(e);
-            return Q_HANDLED();
-        }
-    }
-    return Q_SUPER(&GuiMgr::Ticker);
-}
-
-
-QState GuiMgr::Bmp(GuiMgr * const me, QEvt const * const e) {
-    switch (e->sig) {
-        case Q_ENTRY_SIG: {
-            EVENT(e);
-            WM_HWIN handle = me->m_bmp.Create(me, me->m_bgWnd.GetHandle(), 0, 0, 128, 128, &WmCallback);
-            LOG("bmp win handle = %d", handle);
-            me->AddWin(handle, PAINT_BMP);
-            uint32_t bmpCnt = ARRAY_COUNT(guiBitmap);
-            for (uint32_t i=0; i<bmpCnt && i<GuiBmp::IMG_CNT; i++) {
-                me->m_bmp.SetBitmap(i, guiBitmap[i]);
-            }
-            me->m_bmpTimer.Start(GetTimeout(m_bmpTimeout, ARRAY_COUNT(m_bmpTimeout), 0, 0));
-            me->m_bmpCycleCnt = 0;
-            WM_Exec();
-            return Q_HANDLED();
-        }
-        case Q_EXIT_SIG: {
-            EVENT(e);
-            me->RemoveWin(me->m_bmp.Destroy());
-            me->m_bmpTimer.Stop();
-            return Q_HANDLED();
-        }
-        case Q_INIT_SIG: {
-            return Q_TRAN(&GuiMgr::BmpNormal);
-        }
-        case PAINT_BMP: {
-            EVENT(e);
-            me->SetDirty(me->m_bmp.Paint());
-            return Q_HANDLED();
-        }
-        case BMP_TIMER: {
-            EVENT(e);
-            uint32_t imgIdx = 0;
-            uint32_t offsetLeft = 0;
-            uint32_t offsetRight = 0;
-            me->m_bmp.Update(-1, imgIdx, offsetLeft, offsetRight);
-            me->m_bmpTimer.Start(GetTimeout(m_bmpTimeout, ARRAY_COUNT(m_bmpTimeout), offsetLeft, offsetRight));
-            WM_Exec();
-            INFO("%d, %d (%d)\n\r", offsetLeft, offsetRight, me->m_bmpCycleCnt);
-            if (offsetLeft == 1) {
-                me->m_bmpCycleCnt++;
-                if (me->m_bmpCycleCnt >= ARRAY_COUNT(guiBitmap)) {
-                    // Commented to stay in bmp state.
-                    //return Q_TRAN(&GuiMgr::Ticker);
-                }
-            }
-            return Q_HANDLED();
-        }
-    }
-    return Q_SUPER(&GuiMgr::Started);
-}
-
-QState GuiMgr::BmpNormal(GuiMgr * const me, QEvt const * const e) {
-    switch (e->sig) {
-        case Q_ENTRY_SIG: {
-            EVENT(e);
-            return Q_HANDLED();
-        }
-        case Q_EXIT_SIG: {
-            EVENT(e);
-            return Q_HANDLED();
-        }
-    }
-    return Q_SUPER(&GuiMgr::Bmp);
-}
-
-QState GuiMgr::BmpAlert(GuiMgr * const me, QEvt const * const e) {
-    switch (e->sig) {
-        case Q_ENTRY_SIG: {
-            EVENT(e);
-            return Q_HANDLED();
-        }
-        case Q_EXIT_SIG: {
-            EVENT(e);
-            return Q_HANDLED();
-        }
-    }
-    return Q_SUPER(&GuiMgr::Bmp);
 }
 
 /*

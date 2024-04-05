@@ -75,7 +75,7 @@ enum {
 class Ws2812StartReq : public Evt {
 public:
     enum {
-        TIMEOUT_MS = 200
+        TIMEOUT_MS = 100
     };
     Ws2812StartReq(uint32_t ledCount) :
         Evt(WS2812_START_REQ), m_ledCount(ledCount) {}
@@ -93,7 +93,7 @@ public:
 class Ws2812StopReq : public Evt {
 public:
     enum {
-        TIMEOUT_MS = 200
+        TIMEOUT_MS = 100
     };
     Ws2812StopReq() :
         Evt(WS2812_STOP_REQ) {}
@@ -108,7 +108,7 @@ public:
 class Ws2812SetReq : public Evt {
 public:
     enum {
-        TIMEOUT_MS = 200,
+        TIMEOUT_MS = 100,
         MAX_LED_COUNT = 16      // When this is increased, we may need to increase event pool size in fw.h.
                                 // Each LedColor object takes 8 bytes.
     };
@@ -117,7 +117,8 @@ public:
     using LedColor = KeyValue<uint32_t, uint32_t>;
 
     Ws2812SetReq(LedColor const *colors, uint32_t count) :
-        Evt(WS2812_SET_REQ), m_count(LESS(count, MAX_LED_COUNT)) {
+        Evt(WS2812_SET_REQ), m_count(count) {
+        WS2812_INTERFACE_ASSERT(m_count <= MAX_LED_COUNT);
         ArrayCopy(m_colors, colors, m_count);
     }
     LedColor const *GetColors() const { return m_colors; }
