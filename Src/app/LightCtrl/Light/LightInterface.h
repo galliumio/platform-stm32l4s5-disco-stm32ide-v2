@@ -55,6 +55,7 @@ namespace APP {
     ADD_EVT(LIGHT_START_CFM) \
     ADD_EVT(LIGHT_STOP_REQ) \
     ADD_EVT(LIGHT_STOP_CFM) \
+    ADD_EVT(LIGHT_EXCEPTION_IND) \
     ADD_EVT(LIGHT_SET_REQ) \
     ADD_EVT(LIGHT_SET_CFM) \
     ADD_EVT(LIGHT_PATTERN_REQ) \
@@ -84,6 +85,7 @@ enum class LightPatternIdx {
     ALERT_BLUE,
     ALERT_RED_BLUE,
     ALERT_AMBER_WHITE,
+    STROBE_WHITE,
     // Add more patterns here.
     INVALID,
     COUNT = INVALID
@@ -120,6 +122,12 @@ class LightStopCfm : public ErrorEvt {
 public:
     LightStopCfm(Error error, Hsmn origin = HSM_UNDEF, Reason reason = 0) :
         ErrorEvt(LIGHT_STOP_CFM, error, origin, reason) {}
+};
+
+class LightExceptionInd : public ErrorEvt {
+public:
+    LightExceptionInd(Error error, Hsmn origin = HSM_UNDEF, Reason reason = 0) :
+        ErrorEvt(LIGHT_EXCEPTION_IND, error, origin, reason) {}
 };
 
 class LightSetReq : public Evt {

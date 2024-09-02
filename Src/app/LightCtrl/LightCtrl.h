@@ -69,6 +69,7 @@ protected:
         static QState Started(LightCtrl * const me, QEvt const * const e);
             static QState Idle(LightCtrl * const me, QEvt const * const e);
             static QState Busy(LightCtrl * const me, QEvt const * const e);
+        static QState Exception(LightCtrl * const me, QEvt const * const e);
 
     bool Perform(LightCtrlOp op);
 
@@ -80,6 +81,7 @@ protected:
     };
 
     Light m_light[LIGHT_COUNT]; // LIGHT_COUNT is the no. of actual LEDs used (each LED controlled by a LIGHT HSM/region).
+    Hsmn m_manager;             // Managing HSM.
     Evt m_inEvt;                // Static event copy of a generic incoming req to be confirmed. Added more if needed.
     MsgBaseEvt m_inMsg;         // Static event copy of the base of an incoming request message to be confirmed.
     Timer m_stateTimer;

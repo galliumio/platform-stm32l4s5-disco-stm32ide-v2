@@ -70,7 +70,7 @@ protected:
             static QState Pattern(Light * const me, QEvt const * const e);
                 static QState Repeating(Light * const me, QEvt const * const e);
                 static QState Once(Light * const me, QEvt const * const e);
-            static QState Faulted(Light * const me, QEvt const * const e);
+        static QState Exception(Light * const me, QEvt const * const e);
 
     void CalRampSteps();
     void UpdateRampColor();

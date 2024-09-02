@@ -71,7 +71,7 @@ bool LightCtrl::Perform(LightCtrlOp op) {
     switch(op) {
         case LightCtrlOp::ALL_OFF: {
             for (uint32_t i = 0; i < ARRAY_COUNT(m_light); i++) {
-                SendReq(new LightSetReq(0), LIGHT + i, (i == 0));
+                SendReq(new LightOffReq, LIGHT + i, (i == 0));
             }
             return true;
         }
@@ -140,7 +140,7 @@ LightCtrl::LightCtrl() :
         { REAR_LIGHT_0, "REAR_LIGHT_0",   4, 1, 0  },
         { REAR_LIGHT_1, "REAR_LIGHT_1",   7, 1, 0  }
     },
-    m_inEvt(QEvt::STATIC_EVT), m_inMsg(QEvt::STATIC_EVT),
+    m_manager(HSM_UNDEF), m_inEvt(QEvt::STATIC_EVT), m_inMsg(QEvt::STATIC_EVT),
     m_stateTimer(GetHsmn(), STATE_TIMER), m_busyTimer(GetHsmn(), BUSY_TIMER)  {
     SET_EVT_NAME(LIGHT_CTRL);
 }
@@ -191,6 +191,7 @@ QState LightCtrl::Stopped(LightCtrl * const me, QEvt const * const e) {
     switch (e->sig) {
         case Q_ENTRY_SIG: {
             EVENT(e);
+            me->m_manager = HSM_UNDEF;
             return Q_HANDLED();
         }
         case Q_EXIT_SIG: {
@@ -206,6 +207,7 @@ QState LightCtrl::Stopped(LightCtrl * const me, QEvt const * const e) {
         case LIGHT_CTRL_START_REQ: {
             EVENT(e);
             Evt const &req = EVT_CAST(*e);
+            me->m_manager = req.GetFrom();
             me->m_inEvt = req;
             return Q_TRAN(&LightCtrl::Starting);
         }
@@ -229,6 +231,12 @@ QState LightCtrl::Starting(LightCtrl * const me, QEvt const * const e) {
         }
         case Q_INIT_SIG: {
             return Q_TRAN(&LightCtrl::Starting1);
+        }
+        case LIGHT_EXCEPTION_IND: {
+            ErrorEvt const &ind = ERROR_EVT_CAST(*e);
+            ERROR_EVENT(ind);
+            me->Raise(new Failed(ind.GetError(), ind.GetOrigin(), ind.GetReason()));
+            return Q_HANDLED();
         }
         case FAILED:
         case STATE_TIMER: {
@@ -264,8 +272,8 @@ QState LightCtrl::Starting1(LightCtrl * const me, QEvt const * const e) {
             return Q_HANDLED();
         }
         case WS2812_START_CFM: {
-            EVENT(e);
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
+            ERROR_EVENT(cfm);
             bool allReceived;
             if (!me->CheckCfm(cfm, allReceived)) {
                 me->Raise(new Failed(cfm.GetError(), cfm.GetOrigin(), cfm.GetReason()));
@@ -296,8 +304,8 @@ QState LightCtrl::Starting2(LightCtrl * const me, QEvt const * const e) {
             return Q_HANDLED();
         }
         case LIGHT_START_CFM: {
-            EVENT(e);
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
+            ERROR_EVENT(cfm);
             bool allReceived;
             if (!me->CheckCfm(cfm, allReceived)) {
                 me->Raise(new Failed(cfm.GetError(), cfm.GetOrigin(), cfm.GetReason()));
@@ -367,8 +375,8 @@ QState LightCtrl::Stopping1(LightCtrl * const me, QEvt const * const e) {
             return Q_HANDLED();
         }
         case LIGHT_STOP_CFM: {
-            EVENT(e);
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
+            ERROR_EVENT(cfm);
             bool allReceived;
             if (!me->CheckCfm(cfm, allReceived)) {
                 me->Raise(new Failed(cfm.GetError(), cfm.GetOrigin(), cfm.GetReason()));
@@ -397,8 +405,8 @@ QState LightCtrl::Stopping2(LightCtrl * const me, QEvt const * const e) {
             return Q_HANDLED();
         }
         case WS2812_STOP_CFM: {
-            EVENT(e);
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
+            ERROR_EVENT(cfm);
             bool allReceived;
             if (!me->CheckCfm(cfm, allReceived)) {
                 me->Raise(new Failed(cfm.GetError(), cfm.GetOrigin(), cfm.GetReason()));
@@ -427,6 +435,12 @@ QState LightCtrl::Started(LightCtrl * const me, QEvt const * const e) {
         }
         case Q_INIT_SIG: {
             return Q_TRAN(&LightCtrl::Idle);
+        }
+        case LIGHT_EXCEPTION_IND: {
+            ErrorEvt const &ind = ERROR_EVT_CAST(*e);
+            ERROR_EVENT(ind);
+            me->Send(new LightCtrlExceptionInd(ind.GetError(), ind.GetOrigin(), ind.GetReason()), me->m_manager);
+            return Q_TRAN(&LightCtrl::Exception);
         }
     }
     return Q_SUPER(&LightCtrl::Root);
@@ -519,6 +533,19 @@ QState LightCtrl::Busy(LightCtrl * const me, QEvt const * const e) {
     return Q_SUPER(&LightCtrl::Started);
 }
 
+QState LightCtrl::Exception(LightCtrl * const me, QEvt const * const e) {
+    switch (e->sig) {
+        case Q_ENTRY_SIG: {
+            EVENT(e);
+            return Q_HANDLED();
+        }
+        case Q_EXIT_SIG: {
+            EVENT(e);
+            return Q_HANDLED();
+        }
+    }
+    return Q_SUPER(&LightCtrl::Root);
+}
 
 /*
 QState LightCtrl::MyState(LightCtrl * const me, QEvt const * const e) {

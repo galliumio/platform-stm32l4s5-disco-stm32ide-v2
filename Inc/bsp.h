@@ -46,7 +46,7 @@
 #include "stm32l4s5i_iot01.h"
 #include "stm32l4xx_it.h"
 
-#define BSP_TICKS_PER_SEC            (1000)
+#define BSP_TICKS_PER_SEC            (995)      // (1000) Adjusted based on timer output measurement with scope.
 #define BSP_MSEC_PER_TICK            (1000 / BSP_TICKS_PER_SEC)
 #define BSP_MSEC_TO_TICK(ms_)        ((ms_) / BSP_MSEC_PER_TICK)
 

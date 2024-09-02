@@ -141,8 +141,8 @@ protected:
         RUN_TIMEOUT_MS = 50000,
         COAST_TIMEOUT_MS = 120000,      // Max coasting time.
         RUN_LEVEL_DEFAULT = 850,        // PWM duty-cycle permil level (0-1000).
-        RUN_LEVEL_PUSH = 875,           // PWM duty-cycle permil level (0-1000).
-        RUN_LEVEL_PULL = 925,           // PWM duty-cycle permil level (0-1000).
+        RUN_LEVEL_PUSH = 850,           // PWM duty-cycle permil level (0-1000).
+        RUN_LEVEL_PULL = 950,           // PWM duty-cycle permil level (0-1000).
         ACCEL_DEFAULT = 80,             // PWM permil steps per second.
         DECEL_DEFAULT = 80,             // PWM permil steps per second.
         DECEL_BREAK = 500,              // PWM permil steps per second.

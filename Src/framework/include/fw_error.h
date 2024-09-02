@@ -51,11 +51,11 @@ enum Error {
     ERROR_HAL,          // HAL driver error.
     ERROR_HARDWARE,     // Hardware error.
     ERROR_HSMN,         // Invalid HSMN.
-    ERROR_STATE,        // Invalid state.
+    ERROR_STATE,        // Invalid state (e.g. in Stopped or Exception).
     ERROR_UNAVAIL,      // Resource unavailable, busy.
     ERROR_PARAM,        // Invalid parameter, out of range.
     ERROR_NETWORK,      // Network related errors.
-    ERROR_AUTH          // Authentication error.
+    ERROR_AUTH,         // Authentication error.
 };
 
 // HSM specific reason code to explain why an error code has occurred.

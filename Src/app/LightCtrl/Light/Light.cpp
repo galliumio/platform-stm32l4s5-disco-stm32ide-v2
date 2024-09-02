@@ -209,8 +209,8 @@ QState Light::Stopping(Light * const me, QEvt const * const e) {
             return Q_HANDLED();
         }
         case WS2812_SET_CFM: {
-            EVENT(e);
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
+            ERROR_EVENT(cfm);
             bool allReceived;
             if (!me->CheckCfm(cfm, allReceived, me->m_ws2812Seq)) {
                 me->Raise(new Failed(cfm.GetError(), cfm.GetOrigin(), cfm.GetReason()));
@@ -250,8 +250,8 @@ QState Light::Started(Light * const me, QEvt const * const e) {
             return Q_TRAN(&Light::Off);
         }
         case WS2812_SET_CFM: {
-            EVENT(e);
             ErrorEvt const &cfm = ERROR_EVT_CAST(*e);
+            ERROR_EVENT(cfm);
             bool allReceived;
             if (!me->CheckCfm(cfm, allReceived, me->m_ws2812Seq)) {
                 me->Raise(new Failed(cfm.GetError(), cfm.GetOrigin(), cfm.GetReason()));
@@ -301,7 +301,13 @@ QState Light::Started(Light * const me, QEvt const * const e) {
         case FAILED:
         case WS2812_TIMER: {
             EVENT(e);
-            return Q_TRAN(&Light::Faulted);
+            if (e->sig == FAILED) {
+                ErrorEvt const &failed = ERROR_EVT_CAST(*e);
+                me->Send(new LightExceptionInd(failed.GetError(), failed.GetOrigin(), failed.GetReason()), me->m_manager);
+            } else {
+                me->Send(new LightExceptionInd(ERROR_TIMEOUT, me->GetHsmn()), me->m_manager);
+            }
+            return Q_TRAN(&Light::Exception);
         }
     }
     return Q_SUPER(&Light::Root);
@@ -501,28 +507,18 @@ QState Light::Once(Light * const me, QEvt const * const e) {
     return Q_SUPER(&Light::Pattern);
 }
 
-QState Light::Faulted(Light * const me, QEvt const * const e) {
+QState Light::Exception(Light * const me, QEvt const * const e) {
     switch (e->sig) {
         case Q_ENTRY_SIG: {
             EVENT(e);
-            // @todo Refines fault handling.
-            FW_ASSERT(false);
-            me->m_ws2812Timer.Stop();
             return Q_HANDLED();
         }
         case Q_EXIT_SIG: {
             EVENT(e);
             return Q_HANDLED();
         }
-        case LIGHT_OFF_REQ:
-        case LIGHT_SET_REQ:
-        case LIGHT_PATTERN_REQ: {
-            EVENT(e);
-            LOG("Request ignored in Faulted state");
-            return Q_HANDLED();
-        }
     }
-    return Q_SUPER(&Light::Started);
+    return Q_SUPER(&Light::Root);
 }
 
 /*

@@ -346,7 +346,8 @@ entry/ GenPwmData(), StartDma(),
        start m_busyTimer
 exit/ StopDma(),
       stop m_busyTimer
-BUSY_TIMER/ assert (@todo - TBD)
+BUSY_TIMER/ assert
+            (@todo Add Exception state)
 
 valign=top
 </panel_attributes>

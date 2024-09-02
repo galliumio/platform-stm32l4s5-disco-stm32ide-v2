@@ -162,7 +162,7 @@ static CmdStatus Timer(Console &console, Evt const *e) {
             break;
         }
         case Console::CONSOLE_TIMER: {
-            console.Print("timeout %d\n\r", console.Var(0)++);
+            console.Print("timeout %d\n\r", ++console.Var(0));
             break;
         }
     }

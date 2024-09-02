@@ -56,6 +56,7 @@ namespace APP {
     ADD_EVT(LIGHT_CTRL_START_CFM) \
     ADD_EVT(LIGHT_CTRL_STOP_REQ) \
     ADD_EVT(LIGHT_CTRL_STOP_CFM) \
+    ADD_EVT(LIGHT_CTRL_EXCEPTION_IND) \
     ADD_EVT(LIGHT_CTRL_OP_REQ) \
     ADD_EVT(LIGHT_CTRL_OP_CFM)
 
@@ -99,6 +100,12 @@ class LightCtrlStopCfm : public ErrorEvt {
 public:
     LightCtrlStopCfm(Error error, Hsmn origin = HSM_UNDEF, Reason reason = 0) :
         ErrorEvt(LIGHT_CTRL_STOP_CFM, error, origin, reason) {}
+};
+
+class LightCtrlExceptionInd : public ErrorEvt {
+public:
+    LightCtrlExceptionInd(Error error, Hsmn origin = HSM_UNDEF, Reason reason = 0) :
+        ErrorEvt(LIGHT_CTRL_EXCEPTION_IND, error, origin, reason) {}
 };
 
 class LightCtrlOpReq : public MsgEvt {
